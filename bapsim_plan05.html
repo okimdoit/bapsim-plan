@@ -586,10 +586,13 @@ function setSyncStatus(s,m){
   el.textContent=m;
 }
 
+auth.getRedirectResult().catch(e=>console.error(e));
+
 window.signInWithGoogle = async()=>{
-  try{ await auth.signInWithPopup(provider); }
+  try{ await auth.signInWithRedirect(provider); }
   catch(e){ document.getElementById('loginError').textContent='로그인 실패: '+e.message; }
 };
+
 window.doSignOut = async()=>{
   if(confirm('로그아웃 하시겠습니까?')) await auth.signOut();
 };
