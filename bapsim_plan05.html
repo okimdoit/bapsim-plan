@@ -558,12 +558,13 @@ section.s8{border-top-color:#f4a261;}
 </main>
 
 <!-- ===== FIREBASE ===== -->
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+<!-- ===== FIREBASE ===== -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
-const firebaseConfig={
+<script>
+const firebaseConfig = {
   apiKey:"AIzaSyAy_Z0mkwpnRTwvQ2tBQTdM3LxS0Le9LVM",
   authDomain:"bapsim-plan.firebaseapp.com",
   databaseURL:"https://bapsim-plan-default-rtdb.firebaseio.com",
@@ -573,48 +574,45 @@ const firebaseConfig={
   appId:"1:113028089188:web:86910a98a00a2ad0d16671"
 };
 
-const app      = initializeApp(firebaseConfig);
-const db       = getDatabase(app);
-const auth     = getAuth(app);
-const provider = new GoogleAuthProvider();
+firebase.initializeApp(firebaseConfig);
+const db   = firebase.database();
+const auth = firebase.auth();
+const provider = new firebase.auth.GoogleAuthProvider();
 
 function setSyncStatus(s,m){
   const el=document.getElementById('syncStatus');
-  if(!el)return;
+  if(!el) return;
   el.className=s;
   el.textContent=m;
 }
 
 window.signInWithGoogle = async()=>{
-  try{ await signInWithPopup(auth,provider); }
+  try{ await auth.signInWithPopup(provider); }
   catch(e){ document.getElementById('loginError').textContent='로그인 실패: '+e.message; }
 };
 window.doSignOut = async()=>{
-  if(confirm('로그아웃 하시겠습니까?')) await fbSignOut(auth);
+  if(confirm('로그아웃 하시겠습니까?')) await auth.signOut();
 };
 
-onAuthStateChanged(auth, async user=>{
+auth.onAuthStateChanged(async user=>{
   if(user){
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('userInfo').style.display='inline';
     setSyncStatus('syncing','⏳ 불러오는 중...');
     try{
-      const snap = await get(ref(db,'bapsim'));
+      const snap = await db.ref('bapsim').get();
       if(snap.exists()){
         const data = snap.val();
-        // checks
         if(data.checks) Object.entries(data.checks).forEach(([k,v])=>{
           const cb=document.querySelector(`[data-key="${k}"]`);
           if(cb&&v){cb.checked=true;const tr=cb.closest('tr');if(tr)tr.classList.add('done');}
         });
-        // important
         if(data.importants) Object.entries(data.importants).forEach(([k,v])=>{
           if(v){
             const btn=document.querySelector(`[data-imp="${k}"]`);
             if(btn){btn.classList.add('on');const tr=btn.closest('tr');if(tr)tr.classList.add('important');}
           }
         });
-        // memos
         if(data.memos) Object.entries(data.memos).forEach(([k,v])=>{
           const el=document.getElementById('memo-'+k);if(el)el.value=v;
         });
@@ -624,25 +622,19 @@ onAuthStateChanged(auth, async user=>{
         if(data.sectionmemos) Object.entries(data.sectionmemos).forEach(([k,v])=>{
           const el=document.getElementById('memo-'+k);if(el)el.value=v;
         });
-        // guide texts
         if(data.guidetexts) Object.entries(data.guidetexts).forEach(([k,v])=>{
           const el=document.getElementById(k);if(el)el.value=v;
         });
-        // custom tasks
         if(data.customTasks) Object.entries(data.customTasks).forEach(([dayId,tasks])=>{
           if(Array.isArray(tasks)) tasks.forEach(t=>renderCustomTask(dayId,t));
         });
-        // custom checklist
         if(data.customChecklist) data.customChecklist.forEach(t=>renderChecklistItem(t,true));
-        // custom milestones
         if(data.customMs) Object.entries(data.customMs).forEach(([grp,items])=>{
           if(Array.isArray(items)) items.forEach(t=>renderMsItem(grp,t,true));
         });
-        // ms memos
         if(data.msmemos) Object.entries(data.msmemos).forEach(([k,v])=>{
           const el=document.getElementById('memo-ms-'+k);if(el)el.value=v;
         });
-        // report draft
         if(data.report) Object.entries(data.report).forEach(([k,v])=>{
           const el=document.getElementById(k);if(el)el.value=v;
         });
@@ -651,20 +643,27 @@ onAuthStateChanged(auth, async user=>{
       updateProgress();
       ['mar','apr','3k','5k','book','q'].forEach(g=>updateMsProgressFull(g));
       setSyncStatus('synced','✅ 동기화됨');
-    }catch(e){ setSyncStatus('error','❌ 로드 실패'); }
+    } catch(e){
+      setSyncStatus('error','❌ 로드 실패');
+    }
 
-    // realtime listener
-    onValue(ref(db,'bapsim/checks'),snap=>{
-      if(!snap.exists())return;
+    // 실시간 리스너
+    db.ref('bapsim/checks').on('value', snap=>{
+      if(!snap.exists()) return;
       Object.entries(snap.val()).forEach(([k,v])=>{
         const cb=document.querySelector(`[data-key="${k}"]`);
-        if(cb&&cb.checked!==v){cb.checked=v;const tr=cb.closest('tr');if(tr)tr.classList.toggle('done',v);}
+        if(cb&&cb.checked!==v){
+          cb.checked=v;
+          const tr=cb.closest('tr');
+          if(tr) tr.classList.toggle('done',v);
+        }
       });
       updateProgress();
     });
-    onValue(ref(db,'bapsim/lastUpdated'),snap=>{
+    db.ref('bapsim/lastUpdated').on('value', snap=>{
       if(snap.exists()) document.getElementById('lastUpdated').textContent=snap.val();
     });
+
   } else {
     document.getElementById('loginScreen').style.display='flex';
     document.getElementById('userInfo').style.display='none';
@@ -672,18 +671,20 @@ onAuthStateChanged(auth, async user=>{
   }
 });
 
-window.fbSet = async(path,value)=>{
+window.fbSet = async(path, value)=>{
   setSyncStatus('syncing','⏳ 저장 중...');
   try{
-    await set(ref(db,path),value);
-    const now=fmtDateTime(new Date());
-    await set(ref(db,'bapsim/lastUpdated'),now);
-    document.getElementById('lastUpdated').textContent=now;
+    await db.ref(path).set(value);
+    const now = fmtDateTime(new Date());
+    await db.ref('bapsim/lastUpdated').set(now);
+    document.getElementById('lastUpdated').textContent = now;
     setSyncStatus('synced','✅ 동기화됨');
-  }catch(e){ setSyncStatus('error','❌ 저장 실패'); }
+  } catch(e){
+    setSyncStatus('error','❌ 저장 실패');
+  }
 };
 </script>
-
+  
 <!-- ===== APP JS ===== -->
 <script>
 // ── 날짜 유틸 ──
