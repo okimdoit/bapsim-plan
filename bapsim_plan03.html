@@ -1257,4 +1257,469 @@ function renderCustomTask(dayId,task){
   tr.dataset.customId=task.id;
   tr.innerHTML=`<td class="check-cell"><input type="checkbox" data-key="${task.id}" onchange="toggleRow(this);saveCheck(this)"></td>
     <td style="color:#888;font-size:0.78rem;">추가</td>
-    <td class
+    <td class.task-text">${task.text}</td>
+    <td>—</td>
+    <td><button class="delete-task-btn" onclick="deleteTask('${dayId}','${task.id}',this)">🗑</button></td>`;
+  tbody.appendChild(tr);
+}
+function deleteTask(dayId,taskId,btn){
+  btn.closest('tr').remove();
+  customTasks[dayId]=customTasks[dayId].filter(t=>t.id!==taskId);
+  if(window.fbSet) window.fbSet('bapsim/customTasks/'+dayId, customTasks[dayId]);
+}
+
+// ③ 즉시 체크리스트 추가/삭제
+const customChecklist=[];
+function addChecklistItem(){
+  const input=document.getElementById('add-checklist5');
+  const text=input.value.trim(); if(!text) return;
+  const item={text,id:'cl-'+Date.now()};
+  customChecklist.push(item);
+  renderChecklistItem(item);
+  if(window.fbSet) window.fbSet('bapsim/customChecklist', customChecklist);
+  input.value='';
+  updateProgress();
+}
+function renderChecklistItem(item){
+  const tbody=document.getElementById('checklist5-body'); if(!tbody) return;
+  if(document.querySelector(`[data-key="${item.id}"]`)) return;
+  const rowCount=tbody.querySelectorAll('tr').length+1;
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td class="check-cell"><input type="checkbox" data-key="${item.id}" onchange="toggleRow(this);saveCheck(this);updateProgress()"></td>
+    <td>${rowCount}</td>
+    <td class="task-text">${item.text}</td>
+    <td>—</td>
+    <td>—</td>
+    <td><button class="delete-task-btn" onclick="deleteChecklistItem('${item.id}',this)">🗑</button></td>`;
+  tbody.appendChild(tr);
+}
+function deleteChecklistItem(itemId,btn){
+  btn.closest('tr').remove();
+  const idx=customChecklist.findIndex(i=>i.id===itemId);
+  if(idx>-1) customChecklist.splice(idx,1);
+  if(window.fbSet) window.fbSet('bapsim/customChecklist', customChecklist);
+  updateProgress();
+}
+function updateProgress(){
+  const cbs=document.querySelectorAll('#table5 input[type="checkbox"]');
+  const total=cbs.length, checked=[...cbs].filter(c=>c.checked).length;
+  document.getElementById('progress5Fill').style.width=Math.round(checked/total*100)+'%';
+  document.getElementById('progress5Text').textContent=`${checked} / ${total} 완료`;
+}
+
+// ④ 마일스톤 추가/삭제/게이지
+const customMs={mar:[],apr:[],['3k']:[],['5k']:[],book:[],q:[]};
+function addMsItem(grp){
+  const input=document.getElementById('add-ms-'+grp);
+  const text=input.value.trim(); if(!text) return;
+  const item={text,id:'ms-custom-'+grp+'-'+Date.now()};
+  if(!customMs[grp]) customMs[grp]=[];
+  customMs[grp].push(item);
+  renderMsItem(grp,item);
+  if(window.fbSet) window.fbSet('bapsim/customMs/'+grp, customMs[grp]);
+  input.value='';
+  updateMsProgressFull(grp);
+}
+function renderMsItem(grp,item){
+  const tbody=document.getElementById('ms-body-'+grp); if(!tbody) return;
+  if(document.querySelector(`[data-key="${item.id}"]`)) return;
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td class="check-cell"><input type="checkbox" data-key="${item.id}" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('${grp}')"></td>
+    <td class="task-text">${item.text}</td>
+    <td><button class="delete-task-btn" onclick="deleteMsItem('${grp}','${item.id}',this)">🗑</button></td>`;
+  tbody.appendChild(tr);
+}
+function deleteMsItem(grp,itemId,btn){
+  btn.closest('tr').remove();
+  if(customMs[grp]) customMs[grp]=customMs[grp].filter(i=>i.id!==itemId);
+  if(window.fbSet) window.fbSet('bapsim/customMs/'+grp, customMs[grp]);
+  updateMsProgressFull(grp);
+}
+function updateMsProgress(grp, baseCount){
+  updateMsProgressFull(grp);
+}
+function updateMsProgressFull(grp){
+  const tbody=document.getElementById('ms-body-'+grp); if(!tbody) return;
+  const cbs=tbody.querySelectorAll('input[type="checkbox"]');
+  const total=cbs.length;
+  const checked=[...cbs].filter(c=>c.checked).length;
+  const pct=total?Math.round(checked/total*100):0;
+  const bar=document.getElementById('mg-'+grp+'-bar');
+  const pctEl=document.getElementById('mg-'+grp+'-pct');
+  if(bar) bar.style.width=pct+'%';
+  if(pctEl) pctEl.textContent=`${checked} / ${total} 완료`;
+}
+
+// ── 이월 ──
+function carryToNext(from,to){
+  const undone=[];
+  const tbody=document.getElementById('tasks-'+from);
+  if(tbody){
+    tbody.querySelectorAll('tr').forEach(tr=>{
+      const cb=tr.querySelector('input[type="checkbox"]');
+      const taskCell=tr.querySelector('.task-text');
+      if(cb&&!cb.checked&&taskCell) undone.push(taskCell.textContent.trim());
+    });
+  }
+  if(!undone.length){ showToast('🎉 미완료 항목이 없습니다!'); return; }
+  undone.forEach(text=>{
+    const task={text,id:'carry-'+to+'-'+Date.now()+'-'+Math.random().toString(36).slice(2)};
+    if(!customTasks[to]) customTasks[to]=[];
+    customTasks[to].push(task);
+    renderCustomTask(to,task);
+  });
+  if(window.fbSet) window.fbSet('bapsim/customTasks/'+to, customTasks[to]);
+  showToast(`📦 ${undone.length}개 항목을 이월했습니다.`);
+}
+
+// ── 주간 초기화 ──
+function resetWeeklyChecks(){
+  if(!confirm('이번 주 업무 체크를 모두 초기화할까요?')) return;
+  document.querySelectorAll('[data-key^="week-"]').forEach(cb=>{
+    cb.checked=false; cb.closest('tr').classList.remove('done');
+    if(window.fbSet) window.fbSet('bapsim/checks/'+cb.dataset.key, false);
+  });
+}
+
+// ── 복사 ──
+function copyGuide(id){
+  const el=document.getElementById(id+'-text'); if(!el) return;
+  navigator.clipboard.writeText(el.value).then(()=>showToast('📋 지침이 복사되었습니다!'));
+}
+function copyText(text){
+  navigator.clipboard.writeText(text).then(()=>showToast('📋 복사되었습니다!'));
+}
+
+// ── 토스트 알림 ──
+function showToast(msg){
+  let t=document.getElementById('toast');
+  if(!t){ t=document.createElement('div'); t.id='toast';
+    t.style.cssText='position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1b4332;color:#fff;padding:10px 22px;border-radius:20px;font-size:0.85rem;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.2);transition:opacity .3s;pointer-events:none;';
+    document.body.appendChild(t);
+  }
+  t.textContent=msg; t.style.opacity='1';
+  setTimeout(()=>t.style.opacity='0',2200);
+}
+
+// ── 일간 요약 ──
+function generateDailySummary(){
+  const tk=DAY_KEYS[today.getDay()];
+  if(!tk){ showToast('주말에는 일간 요약이 없습니다.'); return; }
+  const tbody=document.getElementById('tasks-'+tk);
+  const done=[],undone=[];
+  if(tbody){
+    tbody.querySelectorAll('tr').forEach(tr=>{
+      const cb=tr.querySelector('input[type="checkbox"]');
+      const taskCell=tr.querySelector('.task-text');
+      if(cb&&taskCell){
+        (cb.checked?done:undone).push(taskCell.textContent.trim());
+      }
+    });
+  }
+  const memo=document.getElementById('day-memo-'+tk)?.value||'(없음)';
+  const dNames={d1:'월',d2:'화',d3:'수',d4:'목',d5:'금'};
+  const now=new Date();
+  const text=
+`📋 일간 업무 요약 — ${fmtDate(today)} (${dNames[tk]}요일)
+작성: ${fmtDateTime(now)}
+
+✅ 완료 (${done.length}건)
+${done.map(t=>'  ✓ '+t).join('\n')||'  (없음)'}
+
+⬜ 미완료 (${undone.length}건)
+${undone.map(t=>'  ☐ '+t).join('\n')||'  (없음)'}
+
+완료율: ${done.length+undone.length>0?Math.round(done.length/(done.length+undone.length)*100):0}%
+
+📝 오늘 메모
+  ${memo}`;
+  document.getElementById('dailySummaryContent').textContent=text;
+  document.getElementById('dailySummaryBox').style.display='block';
+}
+function copyDailySummaryMd(){
+  const text=document.getElementById('dailySummaryContent').textContent;
+  navigator.clipboard.writeText(text.replace(/  ✓ /g,'- [x] ').replace(/  ☐ /g,'- [ ] '))
+    .then(()=>showToast('📝 MD 형식으로 복사되었습니다!'));
+}
+
+// ── 보고서 생성 (⑤ 체크항목 반영) ──
+function v(id){ return (document.getElementById(id)||{}).value||'___'; }
+
+function getCheckedItems(selector){
+  const items=[];
+  document.querySelectorAll(selector).forEach(cb=>{
+    const tr=cb.closest('tr');
+    const taskCell=tr?tr.querySelector('.task-text'):null;
+    if(taskCell) items.push({done:cb.checked, text:taskCell.textContent.trim()});
+  });
+  return items;
+}
+
+function generateReport(){
+  const now=new Date();
+  const nowStr=fmtDateTime(now);
+
+  // 즉시 체크리스트 ✅ 항목
+  const checkItems=getCheckedItems('#table5 input[type="checkbox"]');
+  const checkDone=checkItems.filter(i=>i.done).map(i=>'  ✓ '+i.text).join('\n')||'  (없음)';
+  const checkUndone=checkItems.filter(i=>!i.done).map(i=>'  ☐ '+i.text).join('\n')||'  (없음)';
+
+  // 마일스톤 진행
+  const msGroups=['mar','apr','3k','5k','book','q'];
+  const msLabels={mar:'3월 말',apr:'4월',['3k']:'팔로워 3,000',['5k']:'팔로워 5,000',book:'에세이집 출판 전',q:'분기별 반복'};
+  let msLines='';
+  msGroups.forEach(grp=>{
+    const cbs=document.querySelectorAll(`#ms-body-${grp} input[type="checkbox"]`);
+    const total=cbs.length;
+    const done=[...cbs].filter(c=>c.checked).length;
+    msLines+=`  ${msLabels[grp]}: ${done}/${total} 완료\n`;
+  });
+
+  const text=
+`[주간 성과 보고 — ${v('rf-week')} | ${v('rf-date')}]
+생성일시: ${nowStr}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧵 Threads @bapsim.longevity
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+팔로워: ${v('rf-th-followers')}명 (전주 대비 ${v('rf-th-diff')})
+포스트: ${v('rf-th-posts')} | 좋아요/댓글: ${v('rf-th-engage')}
+최고 반응: ${v('rf-th-best')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📸 Instagram @okki_artwork
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+팔로워: ${v('rf-ig-followers')}명 (전주 대비 ${v('rf-ig-diff')})
+게시물: ${v('rf-ig-posts')} | 릴스: ${v('rf-ig-reels')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🛒 Etsy / 📌 Pinterest / 🎬 ME
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Etsy 누적: ${v('rf-etsy-total')} | 판매: ${v('rf-etsy-sales')}
+Pinterest: ${v('rf-pin-total')}핀 | 노출: ${v('rf-pin-views')}
+ME 업로드: ${v('rf-me-upload')} | 누적수익: ${v('rf-me-revenue')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ 완료한 일
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${v('rf-done')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ 못한 일 & 이유
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${v('rf-undone')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔜 다음 주 우선순위
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${v('rf-next')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 즉시 체크리스트 현황
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+완료:
+${checkDone}
+미완료:
+${checkUndone}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔁 마일스톤 진행률
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${msLines}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📝 추가 메모
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${v('rf-memo')}`;
+
+  document.getElementById('reportPreviewContent').textContent=text;
+  document.getElementById('reportPreview').classList.add('show');
+}
+
+function copyReportText(){
+  navigator.clipboard.writeText(document.getElementById('reportPreviewContent').textContent)
+    .then(()=>showToast('📋 복사되었습니다! ('+fmtDateTime(new Date())+')'));
+}
+function copyReportMd(){
+  const text=document.getElementById('reportPreviewContent').textContent;
+  navigator.clipboard.writeText('# 📊 주간 보고서\n\n'+text)
+    .then(()=>showToast('📝 MD 복사됨 ('+fmtDateTime(new Date())+')'));
+}
+
+function saveReportDraft(){
+  const ids=['rf-week','rf-date','rf-th-followers','rf-th-diff','rf-th-posts','rf-th-engage','rf-th-best',
+    'rf-ig-followers','rf-ig-diff','rf-ig-posts','rf-ig-reels',
+    'rf-etsy-total','rf-etsy-sales','rf-pin-total','rf-pin-views','rf-me-upload','rf-me-revenue',
+    'rf-done','rf-undone','rf-next','rf-memo'];
+  if(window.fbSet){
+    ids.forEach(id=>{ window.fbSet('bapsim/report/'+id,(document.getElementById(id)||{}).value||''); });
+  }
+  showToast('💾 임시저장 완료 ('+fmtDateTime(new Date())+')');
+}
+function loadReportDraft(){
+  showToast('📂 페이지 새로고침 시 자동으로 불러옵니다.');
+}
+
+// ── 내보내기 ──
+function downloadFile(name,html){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
+  a.download=name; a.click();
+}
+
+// ⑤ 일간 보고서 — 그날 모든 항목 포함
+function exportDailyReport(){
+  const tk=DAY_KEYS[today.getDay()]||'d1';
+  const now=new Date();
+  const nowStr=fmtDateTime(now);
+  const dNames={d1:'월',d2:'화',d3:'수',d4:'목',d5:'금'};
+
+  // 오늘 업무 전체
+  const tbody=document.getElementById('tasks-'+tk);
+  let taskRows='';
+  if(tbody){
+    tbody.querySelectorAll('tr').forEach(tr=>{
+      const cb=tr.querySelector('input[type="checkbox"]');
+      const cells=tr.querySelectorAll('td');
+      if(cells.length>=3){
+        const done=cb&&cb.checked;
+        const time=cells[1]?cells[1].textContent.trim():'';
+        const task=cells[2]?cells[2].textContent.trim():'';
+        taskRows+=`<tr style="background:${done?'#f0fff4':'#fff'}">
+          <td style="text-align:center;padding:7px 10px;">${done?'✅':'⬜'}</td>
+          <td style="padding:7px 10px;color:#888;">${time}</td>
+          <td style="padding:7px 10px;${done?'text-decoration:line-through;color:#aaa':''}">${task}</td>
+        </tr>`;
+      }
+    });
+  }
+
+  // 즉시 체크리스트 전체
+  let clRows='';
+  document.querySelectorAll('#table5 input[type="checkbox"]').forEach(cb=>{
+    const tr=cb.closest('tr');
+    const taskCell=tr?tr.querySelector('.task-text'):null;
+    if(taskCell){
+      const done=cb.checked;
+      clRows+=`<tr style="background:${done?'#f0fff4':'#fff'}">
+        <td style="text-align:center;padding:6px 10px;">${done?'✅':'⬜'}</td>
+        <td style="padding:6px 10px;${done?'text-decoration:line-through;color:#aaa':''}">${taskCell.textContent.trim()}</td>
+      </tr>`;
+    }
+  });
+
+  // 마일스톤 전체
+  const msGroups=['mar','apr','3k','5k','book','q'];
+  const msLabels={mar:'3월 말',apr:'4월',['3k']:'팔로워 3,000',['5k']:'팔로워 5,000',book:'에세이집 출판 전',q:'분기별 반복'};
+  let msSection='';
+  msGroups.forEach(grp=>{
+    const cbs=document.querySelectorAll(`#ms-body-${grp} input[type="checkbox"]`);
+    const total=cbs.length;
+    const done=[...cbs].filter(c=>c.checked).length;
+    const pct=total?Math.round(done/total*100):0;
+    msSection+=`<p style="font-size:0.85rem;margin:4px 0;"><strong>${msLabels[grp]}</strong>: ${done}/${total} 완료 (${pct}%)</p>`;
+  });
+
+  const memo=(document.getElementById('day-memo-'+tk)||{}).value||'(없음)';
+  const clMemo=(document.getElementById('memo-checklist5')||{}).value||'';
+
+  downloadFile(`bapsim_daily_${fmtDate(now).replace(/\./g,'')}.html`,
+`<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<title>일간 보고서 ${fmtDate(now)}</title>
+<style>
+body{font-family:'Segoe UI',sans-serif;max-width:750px;margin:40px auto;padding:0 20px;color:#212529;}
+h1{color:#1b4332;font-size:1.4rem;margin-bottom:4px;}
+h2{color:#2d6a4f;font-size:1rem;margin:22px 0 8px;border-bottom:2px solid #d8f3dc;padding-bottom:5px;}
+table{width:100%;border-collapse:collapse;margin-bottom:14px;}
+th{background:#2d6a4f;color:#fff;padding:8px 10px;text-align:left;font-size:0.82rem;}
+td{border-bottom:1px solid #f0f0f0;}
+.meta{color:#888;font-size:0.82rem;margin-bottom:20px;}
+.memo-box{background:#fffdf5;border:1.5px solid #ffe69c;border-radius:8px;padding:12px;font-size:0.85rem;white-space:pre-wrap;}
+.copy-btn{background:#1d6fa5;color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:0.85rem;margin-top:16px;}
+.copy-btn:hover{background:#155d8a;}
+</style></head>
+<body>
+<h1>📅 일간 보고서</h1>
+<div class="meta">${fmtDate(now)} (${dNames[tk]||''}요일) &nbsp;|&nbsp; 생성: ${nowStr}</div>
+
+<h2>🗓️ 오늘 업무 전체 기록</h2>
+<table><thead><tr><th>상태</th><th>시간</th><th>업무</th></tr></thead><tbody>${taskRows}</tbody></table>
+
+<h2>📋 즉시 체크리스트</h2>
+<table><thead><tr><th>상태</th><th>항목</th></tr></thead><tbody>${clRows}</tbody></table>
+${clMemo?`<div class="memo-box" style="margin-bottom:14px;">📝 체크리스트 메모:<br>${clMemo}</div>`:''}
+
+<h2>🔁 마일스톤 진행률</h2>
+${msSection}
+
+<h2>📝 오늘 메모</h2>
+<div class="memo-box">${memo}</div>
+
+<button class="copy-btn" onclick="
+  const text=document.body.innerText;
+  const md='# 📅 일간 보고서\\n\\n'+text;
+  navigator.clipboard.writeText(md).then(()=>alert('MD 복사됨!'));
+">📝 MD 복사</button>
+</body></html>`);
+  showToast('📥 일간 보고서 저장됨 ('+nowStr+')');
+}
+
+function exportWeeklyReport(){
+  const now=new Date();
+  const nowStr=fmtDateTime(now);
+  let text=document.getElementById('reportPreviewContent').textContent;
+  if(!text||text.trim()==='') { generateReport(); text=document.getElementById('reportPreviewContent').textContent; }
+  downloadFile(`bapsim_weekly_${v('rf-week').replace(/\s/g,'')}_${fmtDate(now).replace(/\./g,'')}.html`,
+`<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>주간 보고서</title>
+<style>body{font-family:'Segoe UI',sans-serif;max-width:750px;margin:40px auto;padding:0 20px;}
+h1{color:#1b4332;}
+pre{background:#f8fffe;border:1.5px solid #95d5b2;border-radius:10px;padding:18px;white-space:pre-wrap;font-size:0.85rem;line-height:1.8;}
+.meta{color:#888;font-size:0.8rem;margin-bottom:16px;}
+.copy-btn{background:#7b2d8b;color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;margin-top:14px;font-size:0.85rem;}
+</style></head>
+<body>
+<h1>📊 주간 성과 보고서</h1>
+<div class="meta">저장일시: ${nowStr}</div>
+<pre>${text}</pre>
+<button class="copy-btn" onclick="navigator.clipboard.writeText('# 📊 주간 보고서\\n\\n'+document.querySelector('pre').textContent).then(()=>alert('MD 복사됨! (${nowStr})'))">📝 MD 복사</button>
+</body></html>`);
+  showToast('📥 주간 보고서 저장됨 ('+nowStr+')');
+}
+
+function copyDailyReportMd(){
+  const tk=DAY_KEYS[today.getDay()];
+  if(!tk){ showToast('주말에는 일간 보고서가 없습니다.'); return; }
+  const now=new Date();
+  const dNames={d1:'월',d2:'화',d3:'수',d4:'목',d5:'금'};
+  let md=`# 📅 일간 보고서 — ${fmtDate(today)} (${dNames[tk]}요일)\n생성: ${fmtDateTime(now)}\n\n## 업무 현황\n\n`;
+
+  const tbody=document.getElementById('tasks-'+tk);
+  if(tbody){
+    tbody.querySelectorAll('tr').forEach(tr=>{
+      const cb=tr.querySelector('input[type="checkbox"]');
+      const taskCell=tr.querySelector('.task-text');
+      if(cb&&taskCell) md+=cb.checked?`- [x] ${taskCell.textContent.trim()}\n`:`- [ ] ${taskCell.textContent.trim()}\n`;
+    });
+  }
+  const memo=(document.getElementById('day-memo-'+tk)||{}).value||'';
+  if(memo) md+=`\n## 메모\n\n${memo}`;
+  navigator.clipboard.writeText(md).then(()=>showToast('📝 MD 복사됨 ('+fmtDateTime(now)+')'));
+}
+
+// ── 네비 ──
+document.querySelectorAll('nav a').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    scrollToSection(a.getAttribute('href').slice(1));
+  });
+});
+
+// ── 초기 실행 ──
+window.addEventListener('load',()=>{
+  const tk=DAY_KEYS[today.getDay()];
+  showDay(tk||'d1');
+  updateProgress();
+  ['mar','apr','3k','5k','book','q'].forEach(g=>updateMsProgressFull(g));
+});
+</script>
+</body>
+</html>
