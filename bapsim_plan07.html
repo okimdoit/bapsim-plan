@@ -1,0 +1,2348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>밥심 업무 체크리스트</title>
+<style>
+:root{
+  --green:#2d6a4f;--green-light:#b7e4c7;
+  --blue:#1d3557;--purple:#5a189a;
+  --yellow:#e9c46a;--red:#c1121f;
+  --border:#dee2e6;--text:#212529;
+  --shadow:0 2px 12px rgba(0,0,0,0.08);
+  --radius:14px;
+  --nav-h:116px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI','Apple SD Gothic Neo',sans-serif;background:#f0f4f8;color:var(--text);line-height:1.7;}
+
+/* ── 로그인 ── */
+#loginScreen{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#1b4332,#2d6a4f,#40916c);z-index:9999;display:flex;align-items:center;justify-content:center;}
+.login-card{background:#fff;border-radius:24px;padding:44px 36px;text-align:center;width:min(340px,90vw);box-shadow:0 12px 40px rgba(0,0,0,0.25);}
+.login-logo{font-size:3rem;margin-bottom:10px;}
+.login-title{color:#1b4332;font-size:1.25rem;font-weight:700;margin-bottom:6px;}
+.login-sub{color:#888;font-size:0.85rem;margin-bottom:28px;}
+.google-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px 20px;background:#fff;border:2px solid #dee2e6;border-radius:12px;font-size:0.95rem;font-weight:600;color:#333;cursor:pointer;transition:all .2s;}
+.google-btn:hover{background:#f8f9fa;border-color:#2d6a4f;}
+.google-icon{width:22px;height:22px;}
+.login-error{color:#e63946;font-size:0.82rem;margin-top:12px;min-height:18px;}
+
+/* ── 동기화 상태 ── */
+#syncStatus{position:fixed;bottom:20px;right:20px;padding:7px 14px;border-radius:18px;font-size:0.78rem;font-weight:600;box-shadow:0 3px 12px rgba(0,0,0,0.15);z-index:998;transition:all .3s;pointer-events:none;}
+#syncStatus.synced{background:#d8f3dc;color:#1b4332;}
+#syncStatus.syncing{background:#fff3cd;color:#7b5800;}
+#syncStatus.error{background:#ffd6d6;color:#7d0000;}
+
+/* ── 헤더 ── */
+header{background:linear-gradient(135deg,#1b4332 0%,#2d6a4f 60%,#40916c 100%);color:#fff;padding:16px 20px 10px;text-align:center;position:sticky;top:0;z-index:100;box-shadow:0 3px 16px rgba(0,0,0,0.18);}
+header h1{font-size:clamp(1rem,4vw,1.4rem);font-weight:700;}
+.header-meta{font-size:0.78rem;opacity:0.85;margin-top:4px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;}
+.header-badge{background:rgba(255,255,255,0.2);padding:3px 10px;border-radius:10px;}
+.logout-btn{background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);padding:4px 12px;border-radius:10px;font-size:0.75rem;cursor:pointer;}
+
+/* ── 네비 (2줄 고정) ── */
+nav{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;padding:7px 10px 6px;background:#fff;border-bottom:2px solid var(--border);position:sticky;top:62px;z-index:99;box-shadow:var(--shadow);}
+nav a{text-decoration:none;padding:4px 10px;border-radius:16px;font-size:clamp(0.65rem,2.2vw,0.78rem);font-weight:600;border:2px solid transparent;transition:all .2s;white-space:nowrap;}
+nav a:hover{transform:translateY(-2px);}
+.nav-1{background:#d8f3dc;color:#1b4332;border-color:#95d5b2;}
+.nav-2{background:#ddd3f5;color:#5a189a;border-color:#c77dff;}
+.nav-3{background:#caf0f8;color:#03045e;border-color:#90e0ef;}
+.nav-4{background:#fff3b0;color:#7b5e00;border-color:#e9c46a;}
+.nav-5{background:#ffd6d6;color:#7d0000;border-color:#e63946;}
+.nav-6{background:#fce4ec;color:#880e4f;border-color:#f48fb1;}
+.nav-7{background:#e8f5e9;color:#1b5e20;border-color:#a5d6a7;}
+
+main{max-width:960px;margin:0 auto;padding:20px 14px 80px;}
+
+/* ── 섹션 ── */
+section{background:#fff;border-radius:var(--radius);padding:22px 20px 18px;margin-bottom:22px;box-shadow:var(--shadow);border-top:5px solid var(--green);scroll-margin-top:var(--nav-h);}
+section.s2{border-top-color:#7b2d8b;}
+section.s3{border-top-color:#1d6fa5;}
+section.s4{border-top-color:#c9a000;}
+section.s5{border-top-color:#c1121f;}
+section.s6{border-top-color:#e07000;}
+section.s7{border-top-color:#388e3c;}
+.section-title{font-size:clamp(1rem,3.5vw,1.2rem);font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:7px;}
+.section-sub{font-size:0.81rem;color:#666;margin-bottom:16px;padding-bottom:11px;border-bottom:1px dashed var(--border);}
+
+/* ── 접기/펴기 공통 ── */
+.collapsible-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+.collapsible-header:hover{opacity:.85;}
+.collapse-icon{font-size:0.85rem;transition:transform .25s;display:inline-block;}
+.collapse-icon.open{transform:rotate(180deg);}
+.collapsible-body{overflow:hidden;transition:max-height .3s ease;}
+.collapsible-body.closed{display:none;}
+
+/* ── 링크 버튼 ── */
+.link-btn{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:10px;font-size:0.75rem;font-weight:600;text-decoration:none;border:1.5px solid;transition:all .2s;white-space:nowrap;}
+.link-btn:hover{transform:translateY(-1px);}
+.link-btn.threads{background:#f0f0f0;color:#000;border-color:#ccc;}
+.link-btn.pinterest{background:#fff0f0;color:#e60023;border-color:#e60023;}
+.link-btn.instagram{background:#fdf0ff;color:#c13584;border-color:#c13584;}
+.link-btn.etsy{background:#fff5f0;color:#f56400;border-color:#f56400;}
+.link-btn.me{background:#f0f4ff;color:#3b5bdb;border-color:#3b5bdb;}
+.link-btn.genspark{background:#f0fff8;color:#2d6a4f;border-color:#2d6a4f;}
+
+/* ── 시작 지침 ── */
+.guide-block{margin-bottom:16px;border-radius:12px;overflow:hidden;border:1px solid var(--border);}
+.guide-header{padding:10px 14px;font-weight:700;font-size:0.88rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+.guide-header.g1{background:#d8f3dc;color:#1b4332;}
+.guide-header.g2{background:#e9d8fd;color:#4a1072;}
+.guide-header.g3{background:#d0ebff;color:#003d6b;}
+.guide-header.g4{background:#fff3cd;color:#7b5800;}
+.guide-body{display:none;background:#fafafa;padding:12px;}
+.guide-body.open{display:block;}
+.guide-edit-area{width:100%;min-height:220px;padding:12px;border:1.5px solid #d0e8d0;border-radius:8px;font-size:0.8rem;font-family:'Consolas',monospace;line-height:1.6;resize:vertical;background:#f8fffe;color:#333;}
+.guide-edit-area:focus{outline:none;border-color:#2d6a4f;background:#fff;}
+.guide-save-info{font-size:0.73rem;color:#2d6a4f;margin-top:4px;height:14px;}
+.guide-tag{display:inline-block;font-size:0.7rem;padding:2px 7px;border-radius:8px;margin-right:4px;font-weight:700;}
+.guide-tag.t1{background:#d8f3dc;color:#1b4332;}
+.guide-tag.t2{background:#e9d8fd;color:#4a1072;}
+.guide-tag.t3{background:#d0ebff;color:#003d6b;}
+.guide-tag.t4{background:#fff3cd;color:#7b5800;}
+
+/* ── 메모 ── */
+.btn-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;}
+.copy-btn{background:#2d6a4f;color:#fff;border:none;padding:5px 12px;border-radius:10px;font-size:0.76rem;cursor:pointer;}
+.copy-btn:hover{background:#1b4332;}
+.toggle-btn{background:transparent;border:none;font-size:1rem;cursor:pointer;padding:0 4px;}
+.memo-section{margin-top:12px;}
+.memo-section label{font-size:0.79rem;font-weight:600;color:#555;display:block;margin-bottom:4px;}
+.memo-box{width:100%;min-height:68px;padding:8px 10px;border:1.5px solid #d0e8d0;border-radius:8px;font-size:0.83rem;font-family:inherit;resize:vertical;background:#f8fff8;}
+.memo-box:focus{outline:none;border-color:#2d6a4f;}
+.memo-saved{font-size:0.73rem;color:#2d6a4f;margin-top:3px;height:14px;transition:opacity .3s;}
+
+/* ── 요일 탭 ── */
+.day-tabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;}
+.day-tab{padding:7px 14px;border-radius:18px;border:2px solid var(--border);background:#f8f9fa;cursor:pointer;font-weight:600;font-size:clamp(0.75rem,2.5vw,0.85rem);transition:all .2s;flex:1;min-width:52px;text-align:center;}
+.day-tab.active{color:#fff;border-color:transparent;}
+.day-tab.d1.active{background:#2d6a4f;}
+.day-tab.d2.active{background:#1d6fa5;}
+.day-tab.d3.active{background:#7b2d8b;}
+.day-tab.d4.active{background:#c9a000;}
+.day-tab.d5.active{background:#c1121f;}
+.day-tab.d6.active{background:#6c757d;}
+.day-tab.d7.active{background:#495057;}
+.day-content{display:none;}
+.day-content.active{display:block;}
+
+.day-date-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;}
+.day-date-badge{font-size:0.84rem;font-weight:700;padding:5px 13px;border-radius:10px;}
+.d1-date{background:#d8f3dc;color:#1b4332;}
+.d2-date{background:#d0ebff;color:#003d6b;}
+.d3-date{background:#e9d8fd;color:#4a1072;}
+.d4-date{background:#fff3cd;color:#7b5800;}
+.d5-date{background:#ffd6d6;color:#7d0000;}
+.d6-date{background:#e9ecef;color:#495057;}
+.d7-date{background:#dee2e6;color:#343a40;}
+.day-goal{font-size:0.83rem;font-weight:600;padding:7px 12px;border-radius:8px;margin-bottom:11px;}
+.d1-goal{background:#d8f3dc;color:#1b4332;}
+.d2-goal{background:#d0ebff;color:#003d6b;}
+.d3-goal{background:#e9d8fd;color:#4a1072;}
+.d4-goal{background:#fff3cd;color:#7b5800;}
+.d5-goal{background:#ffd6d6;color:#7d0000;}
+.d6-goal{background:#e9ecef;color:#495057;}
+.d7-goal{background:#dee2e6;color:#343a40;}
+
+/* ── 체크 테이블 ── */
+.check-table{width:100%;border-collapse:collapse;font-size:0.84rem;}
+.check-table th{background:#f1f3f5;padding:7px 10px;text-align:left;font-size:0.77rem;color:#555;border-bottom:2px solid var(--border);}
+.check-table td{padding:8px 10px;border-bottom:1px solid #f0f0f0;vertical-align:middle;}
+.check-table tr:hover td{background:#f8fff8;}
+.check-table tr.done td{opacity:.42;text-decoration:line-through;}
+.check-cell{text-align:center;width:32px;}
+.check-cell input[type="checkbox"]{width:16px;height:16px;cursor:pointer;accent-color:#2d6a4f;}
+@media(max-width:600px){
+  .check-table thead{display:none;}
+  .check-table tr{display:flex;align-items:flex-start;padding:10px 8px;border-bottom:1px solid #f0f0f0;flex-wrap:wrap;gap:4px;}
+  .check-table tr.done{opacity:.42;}
+  .check-table td{display:block;border:none;padding:0;}
+  .check-cell{width:28px;flex-shrink:0;padding-top:2px;}
+  .task-text{flex:1;font-size:0.85rem;line-height:1.5;}
+  .check-table tr.done .task-text{text-decoration:line-through;}
+}
+
+/* ── 업로드 체크리스트 ── */
+.upload-section{margin-top:16px;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;}
+.upload-section-header{padding:10px 14px;font-weight:700;font-size:0.88rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;background:#f8f9fa;}
+.upload-section-body{padding:12px 14px;}
+.upload-table{width:100%;border-collapse:collapse;font-size:0.8rem;margin-bottom:8px;}
+.upload-table th{background:#2d6a4f;color:#fff;padding:6px 8px;text-align:left;font-size:0.75rem;}
+.upload-table td{padding:6px 8px;border-bottom:1px solid #f0f0f0;vertical-align:middle;}
+.upload-table tr:hover td{background:#f8fff8;}
+.upload-table .check-cell{text-align:center;width:36px;}
+.upload-table input[type="checkbox"]{width:15px;height:15px;cursor:pointer;accent-color:#2d6a4f;}
+.upload-table .content-input{width:100%;border:1px solid #d0e8d0;border-radius:6px;padding:3px 6px;font-size:0.78rem;font-family:inherit;background:#f8fffe;}
+.upload-table .content-input:focus{outline:none;border-color:#2d6a4f;}
+.platform-header{font-size:0.82rem;font-weight:700;padding:7px 0 4px;color:#555;display:flex;align-items:center;gap:5px;}
+.csv-btn{background:#1d6fa5;color:#fff;border:none;padding:5px 12px;border-radius:8px;font-size:0.75rem;cursor:pointer;display:inline-flex;align-items:center;gap:4px;}
+.csv-btn:hover{background:#155d8a;}
+.csv-upload-btn{background:#7b2d8b;color:#fff;border:none;padding:5px 12px;border-radius:8px;font-size:0.75rem;cursor:pointer;display:inline-flex;align-items:center;gap:4px;}
+.csv-upload-btn:hover{background:#5a1d6e;}
+
+/* ── 플랫폼 운영 원칙 표 ── */
+.principle-table{width:100%;border-collapse:collapse;font-size:0.8rem;margin-bottom:10px;}
+.principle-table th{background:#1b4332;color:#fff;padding:7px 10px;text-align:left;font-size:0.77rem;}
+.principle-table td{padding:7px 10px;border-bottom:1px solid #f0f0f0;vertical-align:middle;}
+.principle-table tr:nth-child(even) td{background:#f8fffe;}
+
+/* ── 콘텐츠 흐름 요약 표 ── */
+.flow-table{width:100%;border-collapse:collapse;font-size:0.8rem;}
+.flow-table th{background:#40916c;color:#fff;padding:6px 10px;text-align:center;font-size:0.77rem;}
+.flow-table td{padding:6px 10px;border-bottom:1px solid #f0f0f0;text-align:center;}
+.flow-table tr:last-child td{background:#d8f3dc;font-weight:700;}
+
+/* ── 누적 콘텐츠 관리 ── */
+.content-log-table{width:100%;border-collapse:collapse;font-size:0.8rem;margin-bottom:10px;}
+.content-log-table th{background:#5a189a;color:#fff;padding:6px 8px;text-align:left;font-size:0.75rem;}
+.content-log-table td{padding:5px 8px;border-bottom:1px solid #f0f0f0;}
+.content-log-table input{width:100%;border:1px solid #e0d0f5;border-radius:4px;padding:3px 5px;font-size:0.78rem;font-family:inherit;}
+.content-log-table input:focus{outline:none;border-color:#5a189a;}
+.content-log-table select{width:100%;border:1px solid #e0d0f5;border-radius:4px;padding:3px 5px;font-size:0.78rem;font-family:inherit;background:#fff;}
+.log-summary{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;padding:8px 12px;background:#f3e8ff;border-radius:8px;font-size:0.8rem;}
+.log-summary span{font-weight:700;color:#5a189a;}
+
+/* ── 콘텐츠 기획 ── */
+.planning-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:4px;}
+.planning-card{border:1.5px solid var(--border);border-radius:12px;overflow:hidden;}
+.planning-card-header{padding:9px 13px;font-weight:700;font-size:0.85rem;display:flex;align-items:center;justify-content:space-between;}
+.planning-card-header.ph1{background:#d8f3dc;color:#1b4332;}
+.planning-card-header.ph2{background:#fff3cd;color:#7b5800;}
+.planning-card-header.ph3{background:#ffd6d6;color:#7d0000;}
+.planning-card-body{padding:10px 12px;background:#fafafa;}
+.planning-item{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px dashed #eee;font-size:0.82rem;}
+.planning-item:last-child{border-bottom:none;}
+.status-badge{font-size:0.68rem;padding:2px 7px;border-radius:8px;font-weight:700;white-space:nowrap;}
+.status-idea{background:#fff3cd;color:#7b5800;}
+.status-wip{background:#d0ebff;color:#003d6b;}
+.status-done{background:#d8f3dc;color:#1b4332;}
+.planning-add{display:flex;gap:5px;margin-top:8px;}
+.planning-input{flex:1;padding:5px 8px;border:1.5px solid #d0e8d0;border-radius:8px;font-size:0.8rem;font-family:inherit;}
+.planning-input:focus{outline:none;border-color:#2d6a4f;}
+
+/* ── 할 일 추가 ── */
+.add-task-row{display:flex;gap:7px;margin-top:10px;align-items:center;}
+.add-task-input{flex:1;padding:8px 12px;border:1.5px solid #d0e8d0;border-radius:10px;font-size:0.85rem;font-family:inherit;}
+.add-task-input:focus{outline:none;border-color:#2d6a4f;}
+.add-task-btn{background:#2d6a4f;color:#fff;border:none;padding:8px 16px;border-radius:10px;font-size:0.85rem;font-weight:600;cursor:pointer;white-space:nowrap;}
+.add-task-btn:hover{background:#1b4332;}
+.delete-task-btn{background:none;border:none;color:#ccc;cursor:pointer;font-size:1rem;padding:0 4px;line-height:1;}
+.delete-task-btn:hover{color:#e63946;}
+.carry-badge{display:inline-block;background:#fff3cd;color:#7b5800;font-size:0.68rem;padding:1px 6px;border-radius:7px;margin-left:5px;font-weight:600;}
+.day-memo-wrap{margin-top:12px;border-top:1px dashed #e0e0e0;padding-top:11px;}
+.day-memo-wrap label{font-size:0.79rem;font-weight:600;color:#555;display:block;margin-bottom:4px;}
+.day-memo-box{width:100%;min-height:60px;padding:8px 10px;border:1.5px solid #d8e8ff;border-radius:8px;font-size:0.84rem;font-family:inherit;resize:vertical;background:#f8fbff;}
+.day-memo-box:focus{outline:none;border-color:#1d6fa5;}
+.carry-btn{background:#fff3cd;color:#7b5800;border:1.5px solid #e9c46a;padding:5px 12px;border-radius:10px;font-size:0.77rem;font-weight:600;cursor:pointer;}
+.carry-btn:hover{background:#e9c46a;color:#fff;}
+.day-copy-btn{background:#fff;color:#2d6a4f;border:1.5px solid #2d6a4f;padding:5px 12px;border-radius:10px;font-size:0.77rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.day-copy-btn:hover{background:#2d6a4f;color:#fff;}
+
+/* ── 성과 보고서 ── */
+.report-form{display:grid;gap:11px;}
+.report-field{display:flex;flex-direction:column;gap:3px;}
+.report-field label{font-size:0.79rem;font-weight:700;color:#555;}
+.report-field input,.report-field textarea{padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:0.84rem;font-family:inherit;}
+.report-field input:focus,.report-field textarea:focus{outline:none;border-color:#2d6a4f;}
+.report-field textarea{resize:vertical;min-height:58px;}
+.report-section-title{font-size:0.87rem;font-weight:700;color:#2d6a4f;padding:5px 0 2px;border-bottom:1px solid #d8f3dc;margin-top:3px;}
+.report-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+@media(max-width:480px){.report-grid-2{grid-template-columns:1fr;}}
+.report-memo-box{width:100%;min-height:68px;padding:8px 10px;border:1.5px solid #ffe69c;border-radius:8px;font-size:0.84rem;font-family:inherit;resize:vertical;background:#fffdf5;}
+.report-memo-box:focus{outline:none;border-color:#e9c46a;}
+.report-preview{background:#f8fffe;border:1.5px solid #95d5b2;border-radius:10px;padding:14px;margin-top:14px;display:none;}
+.report-preview.show{display:block;}
+.report-preview pre{white-space:pre-wrap;font-size:0.81rem;font-family:'Consolas',monospace;color:#333;}
+.preview-actions{display:flex;gap:7px;margin-bottom:9px;flex-wrap:wrap;}
+
+/* ── 일간 요약 ── */
+.daily-summary-box{background:linear-gradient(135deg,#f0fff4,#e8f5e9);border:1.5px solid #95d5b2;border-radius:12px;padding:16px;margin-top:14px;display:none;}
+.daily-summary-box h3{font-size:0.93rem;font-weight:700;color:#1b4332;margin-bottom:10px;}
+.summary-content{font-size:0.84rem;color:#333;line-height:1.8;white-space:pre-wrap;}
+.summary-actions{display:flex;gap:7px;margin-top:11px;flex-wrap:wrap;}
+
+/* ── 마일스톤 ── */
+.milestone-group{margin-bottom:16px;border:1.5px solid var(--border);border-radius:12px;overflow:hidden;}
+.milestone-group-header{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;cursor:pointer;}
+.milestone-group-header.mh-yellow{background:#fff9e6;}
+.milestone-group-header.mh-green{background:#f0fff4;}
+.milestone-group-header.mh-book{background:#f3e8ff;}
+.milestone-group-header.mh-repeat{background:#f5f5f5;}
+.milestone-group-body{padding:12px 14px;}
+.milestone-group-body.closed{display:none;}
+
+/* 마일스톤 내부 항목 접기 */
+.ms-item-toggle{font-size:0.72rem;color:#888;cursor:pointer;padding:4px 0;display:flex;align-items:center;gap:4px;user-select:none;}
+.ms-items-body.closed{display:none;}
+
+/* ── 진행 게이지 ── */
+.progress-wrap{margin-bottom:12px;}
+.progress-label{display:flex;justify-content:space-between;font-size:0.8rem;color:#666;margin-bottom:4px;}
+.progress-bar{height:8px;background:#e9ecef;border-radius:10px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,#2d6a4f,#52b788);border-radius:10px;transition:width .5s;}
+
+/* 장기목표 시각화 */
+.goal-progress-wrap{margin:6px 0 10px;}
+.goal-progress-label{display:flex;justify-content:space-between;font-size:0.78rem;color:#555;margin-bottom:3px;}
+.goal-progress-bar{height:14px;background:#e9ecef;border-radius:8px;overflow:hidden;position:relative;}
+.goal-progress-fill{height:100%;border-radius:8px;transition:width .5s;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:0.68rem;color:#fff;font-weight:700;}
+.goal-fill-green{background:linear-gradient(90deg,#2d6a4f,#52b788);}
+.goal-fill-blue{background:linear-gradient(90deg,#1d6fa5,#4dabf7);}
+.goal-fill-purple{background:linear-gradient(90deg,#5a189a,#c77dff);}
+.goal-fill-yellow{background:linear-gradient(90deg,#c9a000,#ffd43b);}
+.goal-fill-red{background:linear-gradient(90deg,#c1121f,#ff6b6b);}
+.goal-fill-gray{background:linear-gradient(90deg,#495057,#adb5bd);}
+
+/* ── 메모 / 섹션 메모 ── */
+.section-memo-wrap{margin-top:14px;border-top:1px dashed #e0e0e0;padding-top:12px;}
+.section-memo-wrap label{font-size:0.79rem;font-weight:600;color:#555;display:block;margin-bottom:4px;}
+.section-memo-area{width:100%;min-height:60px;padding:8px 10px;border:1.5px solid #ffe69c;border-radius:8px;font-size:0.83rem;font-family:inherit;resize:vertical;background:#fffdf5;}
+.section-memo-area:focus{outline:none;border-color:#e9c46a;}
+
+.badge{display:inline-block;padding:3px 9px;border-radius:10px;font-size:0.73rem;font-weight:700;}
+.badge-yellow{background:#fff3b0;color:#7b5800;}
+.badge-green{background:#d8f3dc;color:#1b4332;}
+.badge-book{background:#e9d8fd;color:#4a1072;}
+.badge-repeat{background:#e0e0e0;color:#333;}
+
+/* ── 운영 팁 ── */
+.tip-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:4px;}
+.tip-card{background:#f8fffe;border:1px solid #b7e4c7;border-radius:10px;padding:12px 14px;font-size:0.83rem;}
+.tip-card strong{color:#2d6a4f;display:block;margin-bottom:3px;}
+
+/* ── 버튼 ── */
+.next-btn-wrap{text-align:right;margin-top:14px;}
+.next-btn{background:linear-gradient(135deg,#2d6a4f,#40916c);color:#fff;border:none;padding:8px 18px;border-radius:16px;font-size:0.85rem;font-weight:600;cursor:pointer;box-shadow:0 3px 10px rgba(45,106,79,0.3);}
+.next-btn:hover{transform:translateY(-2px);}
+.flex-row{display:flex;gap:7px;flex-wrap:wrap;align-items:center;}
+.action-btn{padding:7px 14px;border-radius:12px;font-size:0.81rem;font-weight:600;cursor:pointer;border:none;transition:all .2s;}
+.btn-green{background:#2d6a4f;color:#fff;}
+.btn-green:hover{background:#1b4332;}
+.btn-blue{background:#1d6fa5;color:#fff;}
+.btn-blue:hover{background:#155d8a;}
+.btn-md{background:#f3f0ff;color:#5a189a;border:2px solid #c77dff;}
+.btn-md:hover{background:#e9d8fd;}
+.btn-gray{background:#f1f3f5;color:#555;border:1.5px solid #dee2e6;}
+.btn-gray:hover{background:#dee2e6;}
+.btn-red{background:#ffd6d6;color:#7d0000;border:1.5px solid #e63946;}
+.btn-red:hover{background:#e63946;color:#fff;}
+
+/* ── 내보내기 ── */
+.export-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;}
+.export-card{background:#f8f9fa;border:1.5px solid var(--border);border-radius:12px;padding:16px;}
+.export-card h3{font-size:0.93rem;font-weight:700;margin-bottom:7px;}
+.export-card p{font-size:0.81rem;color:#666;margin-bottom:11px;}
+
+/* ── UID 박스 ── */
+.uid-box{background:#fff3cd;border:1.5px solid #e9c46a;border-radius:10px;padding:12px 14px;font-size:0.82rem;margin-top:12px;display:none;}
+.uid-box code{background:#f1f3f5;padding:2px 8px;border-radius:6px;font-family:monospace;font-size:0.9rem;user-select:all;}
+
+/* ── 플로팅 메모패드 ── */
+#floatMemoBtn{position:fixed;bottom:72px;right:20px;width:46px;height:46px;border-radius:50%;background:#2d6a4f;color:#fff;border:none;font-size:1.2rem;cursor:pointer;box-shadow:0 4px 14px rgba(45,106,79,0.4);z-index:997;display:flex;align-items:center;justify-content:center;transition:transform .2s;}
+#floatMemoBtn:hover{transform:scale(1.1);}
+#floatMemoPad{position:fixed;bottom:126px;right:20px;width:280px;background:#fff;border-radius:16px;box-shadow:0 6px 24px rgba(0,0,0,0.18);z-index:996;display:none;flex-direction:column;overflow:hidden;border:1.5px solid #b7e4c7;}
+#floatMemoPad.show{display:flex;}
+#floatMemoHeader{background:#2d6a4f;color:#fff;padding:9px 14px;font-size:0.85rem;font-weight:700;display:flex;justify-content:space-between;align-items:center;}
+#floatMemoHeader button{background:none;border:none;color:#fff;cursor:pointer;font-size:1rem;padding:0 2px;}
+#floatMemoArea{width:100%;min-height:160px;max-height:280px;padding:12px;border:none;font-size:0.83rem;font-family:inherit;resize:vertical;outline:none;line-height:1.7;}
+#floatMemoFooter{padding:6px 10px;background:#f8fffe;border-top:1px solid #d8f3dc;font-size:0.71rem;color:#2d6a4f;text-align:right;}
+</style>
+</head>
+<body>
+
+<!-- 로그인 -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">🌿</div>
+    <div class="login-title">밥심 업무 체크리스트</div>
+    <div class="login-sub">Google 계정으로 로그인하세요</div>
+    <button class="google-btn" onclick="signInWithGoogle()">
+      <svg class="google-icon" viewBox="0 0 24 24">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+      </svg>
+      Google로 로그인
+    </button>
+    <div class="login-error" id="loginError"></div>
+    <div class="uid-box" id="uidBox">
+      ✅ 로그인 성공!<br><br>UID: <code id="uidValue"></code>
+    </div>
+  </div>
+</div>
+
+<div id="syncStatus" class="synced">✅ 동기화됨</div>
+
+<!-- 플로팅 메모패드 -->
+<button id="floatMemoBtn" onclick="toggleFloatMemo()" title="메모패드">📝</button>
+<div id="floatMemoPad">
+  <div id="floatMemoHeader">
+    📝 메모패드
+    <button onclick="toggleFloatMemo()">✕</button>
+  </div>
+  <textarea id="floatMemoArea" placeholder="아이디어, 할 일, 메모를 자유롭게 적어두세요..." oninput="saveFloatMemo()"></textarea>
+  <div id="floatMemoFooter">자동저장됨</div>
+</div>
+
+<header>
+  <h1>🌿 밥심 업무 체크리스트</h1>
+  <div class="header-meta">
+    <span class="header-badge" id="todayDate"></span>
+    <span class="header-badge">🕐 최종: <span id="lastUpdated">—</span></span>
+    <span id="userInfo" style="display:none;">
+      <button class="logout-btn" onclick="signOut()">로그아웃</button>
+    </span>
+  </div>
+</header>
+
+<nav id="mainNav">
+  <a href="#sec1" class="nav-1">📅 주간루틴</a>
+  <a href="#sec2" class="nav-2">🗂️ 시작지침</a>
+  <a href="#sec3" class="nav-3">📋 체크리스트</a>
+  <a href="#sec4" class="nav-4">🔁 마일스톤</a>
+  <a href="#sec5" class="nav-5">💡 운영팁</a>
+  <a href="#sec6" class="nav-6">📤 내보내기</a>
+  <a href="#sec7" class="nav-7">📊 성과보고</a>
+</nav>
+
+<main>
+
+<!-- ===== 섹션 1: 주간 업무 루틴 ===== -->
+<section id="sec1">
+  <div class="section-title">📅 주간 업무 루틴</div>
+  <div class="section-sub" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:7px;">
+    <span>오늘 요일이 자동 선택됩니다.</span>
+    <div class="flex-row">
+      <button class="action-btn btn-gray" onclick="resetWeeklyChecks()">🔄 주간초기화</button>
+      <button class="action-btn btn-green" onclick="generateDailySummary()">📝 오늘요약</button>
+    </div>
+  </div>
+  <div class="day-tabs">
+    <button class="day-tab d1" onclick="showDay('d1')">🟢 월</button>
+    <button class="day-tab d2" onclick="showDay('d2')">🔵 화</button>
+    <button class="day-tab d3" onclick="showDay('d3')">🟣 수</button>
+    <button class="day-tab d4" onclick="showDay('d4')">🟡 목</button>
+    <button class="day-tab d5" onclick="showDay('d5')">🔴 금</button>
+    <button class="day-tab d6" onclick="showDay('d6')">⚫ 토</button>
+    <button class="day-tab d7" onclick="showDay('d7')">⚫ 일</button>
+  </div>
+
+  <!-- 월요일 -->
+  <div class="day-content" id="day-d1">
+    <div class="day-date-header">
+      <span class="day-date-badge d1-date" id="date-d1">🟢 월요일</span>
+      <div class="flex-row">
+        <button class="day-copy-btn" onclick="copyDaySchedule('d1')">📋 복사</button>
+        <a class="link-btn genspark" href="https://www.genspark.ai" target="_blank">🤖 Genspark</a>
+        <a class="link-btn threads" href="https://www.threads.net/@bapsim.longevity" target="_blank">🧵 Threads</a>
+        <a class="link-btn pinterest" href="https://www.pinterest.com" target="_blank">📌 Pinterest</a>
+      </div>
+    </div>
+    <div class="day-goal d1-goal">🎯 목표: Threads 포스트 2~3개 준비, Pinterest 핀 3~5개 업로드</div>
+    <table class="check-table">
+      <thead><tr><th>✓</th><th>시간</th><th class="task-text">업무</th><th>채팅방</th><th>소요</th></tr></thead>
+      <tbody id="tasks-d1">
+        <tr><td class="check-cell"><input type="checkbox" data-key="week-d1-0" onchange="toggleRow(this);saveCheck(this);maybeSort(this)"></td><td>10:00~10:30</td><td class="task-text">지난주 Threads 반응 확인, 댓글 답변</td><td>직접</td><td>30분</td></tr>
+        <tr><td class="check-cell"><input type="checkbox" data-key="week-d1-1" onchange="toggleRow(this);saveCheck(this);maybeSort(this)"></td><td>10:30~12:00</td><td class="task-text">Threads 포스트 2~3개 초안 작성</td><td>🌿 밥심</td><td>90분</td></tr>
+        <tr><td class="check-cell"><input type="checkbox" data-key="week-d1-2" onchange="toggleRow(this);saveCheck(this);maybeSort(this)"></td><td>12:00~13:00</td><td class="task-text">Pinterest 핀 캡션 3~5개 작성</td><td>🌿 밥심</td><td>60분</td></tr>
+        <tr><td class="check-cell"><input type="checkbox" data-key="week-d1-3" onchange="toggleRow(this);saveCheck(this);maybeSort(this)"></td><td>13:00~14:00</td><td class="task-text">이미지 생성 (Pinterest 핀용)</td><td>🖼️ 이미지</td><td>60분</td></tr>
+      </tbody>
+    </table>
+    <div class="add-task-row">
+      <input type="text" class="add-task-input" id="add-d1" placeholder="+ 할 일 추가..." onkeydown="if(event.key==='Enter')addTask('d1')">
+      <button class="add-task-btn" onclick="addTask('d1')">+ 추가</button>
+    </div>
+    <div class="day-memo-wrap">
+      <label>📝 오늘 메모</label>
+      <textarea class="day-memo-box" id="day-memo-d1" placeholder="오늘 작업 내용, 특이사항..." oninput="saveDayMemo('d1')"></textarea>
+      <div style="margin-top:7px;" class="flex-row">
+        <button class="carry-btn" onclick="carryToNext('d1','d2')">📦 미완료 → 화요일 이월</button>
+      </div>
+    </div>
+    <!-- 업로드 일정 (월) -->
+    <div id="upload-d1"></div>
+  </div>
+
+  <!-- 화요일 -->
+  <div class="day-content" id="day-d2">
+    <div class="day-date-header">
+      <span class="day-date-badge d2-date" id="date-d2">🔵 화요일</span>
+      <div class="flex-row">
+        <button class="day-copy-btn" onclick="copyDaySchedule('d2')">📋 복사</button>
+        <a class="link-btn genspark" href="https://www.genspark.ai" target="_blank">🤖 Genspark</a>
+        <a class="link-btn me" href="https://www.motionelements.com/dashboard" target="_blank">🎬 ME</a>
+      </div>
+    </div>
+    <div class="day-goal d2-goal">🎯 목표: 기존 자산 5개 최적화, 신규 자산 1~2개 업로드</div>
+    <table class="check-table">
+      <thead><tr><th>✓</th><th>시간</th><th class="task-text">업무</th><th>채팅방</th><th>소요</th></tr></thead>
+      <tbody id="tasks-d2">
+        <tr><td class="check-cell"><input type="checkbox" data-key="week-d2-0" onchange="toggleRow(this);saveCheck(this);maybeSort(this)"></td><td>10:00~11:00</td><td class="task-text">기존 자산 태그·설명 개선 (5개)</td><td>🎬 ME</td><td>60분</td></tr>
+        <tr><td class="check-cell"><input type="checkbox" data-key="week-d2-1" onchange="toggleRow(this);saveCheck(this);maybeSort(this)"></td><td>11:00~12:30</td><td class="task-text">신규 자산 준비 (SFX/프롬프트 팩)</td><td>🎬 ME</td><td>90분</td></tr>
+        <tr><td class="check-cell"><input type="checkbox" data-key="week-d2-2" onchange="toggleRow(this);saveCheck(this);maybeSort(this)"></td><td>12:30~14:00</td><td class="task-text">ME 업로드 + 메타데이터 입력</td><td>직접</td><td>90분</td></tr>
+      </tbody>
+    </table>
+    <div class="add-task-row">
+      <input type="text" class="add-task-input" id="add-d2" placeholder="+ 할 일 추가..." onkeydown="if(event.key==='Enter')addTask('d2')">
+      <button class="add-task-btn" onclick="addTask('d2')">+ 추가</button>
+    </div>
+    <div class="day-memo-wrap">
+      <label>📝 오늘 메모</label>
+      <textarea class="day-memo-box" id="day-memo-d2" placeholder="오늘 작업 내용, 특이사항..." oninput="saveDayMemo('d2')"></textarea>
+      <div style="margin-top:7px;" class="flex-row">
+        <button class="carry-btn" onclick="carryToNext('d2','d3')">📦 미완료 → 수요일 이월</button>
+      </div>
+    </div>
+    <div id="upload-d2"></div>
+  </div>
+
+  <!-- 수요일 -->
+  <div class="day-content" id="day-d3">
+    <div class="day-date-header">
+      <span class="day-date-badge d3-date" id="date-d3">🟣 수요일</span>
+      <div class="flex-row">
+        <button class="day-copy-btn" onclick="copyDaySchedule('d3')">📋 복사</button>
+        <a class="link-btn genspark" href="https://www.genspark.ai" target="_blank">🤖 Genspark</a>
+        <a class="link-btn etsy" href="https://www.etsy.com/shop/manager" target="_blank">🛒 Etsy</a>
+        <a class="link-btn instagram" href="https://www.instagram.com/okki_artwork" target="_blank">📸 IG</a>
+      </div>
+    </div>
+    <div class="day-goal d3-goal">🎯 목표: Etsy 상품 1개 등록, Instagram 게시물 1개</div>
+    <table class="check-table">
+      <thead><tr><th>✓</th><th>시간</th><th class="task-text">업무</th><th>채팅방</th><th>소요</th></tr></thead>
+      <tbody id="tasks-d3">
+        <tr><td class="check-cell"><input type="checkbox" data-key="week-d3-0" onchange="toggleRow(this);saveCheck(this);maybeSort(this)"></td><td>10:00~11:00</td><td class="task-text">Etsy 상품 제목·설명·태그 작성</td><td>🎨 okki</td><td>60분</td></tr>
+        <tr><td class="check-cell"><input type="checkbox" data-key="week-d3-1" onchange="toggleRow(this);saveCheck(this);maybeSort(this)"></td><td>11:00~12:00</td><td class="task-text">Etsy 상품 등록 (이미지 스캔·업로드)</td><td>직접</td><td>60분</td></tr>
+        <tr><td class="check-cell"><input type="checkbox" data-key="week-d3-2" onchange="toggleRow(this);saveCheck(this);maybeSort(this)"></td><td>12:00~13:00</td><td class="task-text">Instagram 캡션 + 이미지 준비</td><td>🎨 okki</td><td>60분</td></tr>
+        <tr><td class="check-cell"><input type="checkbox" data-key="week-d3-3" onchange="toggleRow(this);saveCheck(this);maybeSort(this)"></td><td>13:00~14:00</td><td class="task-text">Instagram 게시·스토리 + 댓글 답변</td><td>직접</td><td>60분</td></tr>
+      </tbody>
+    </table>
+    <div class="add-task-row">
+      <input type="text" class="add-task-input" id="add-d3" placeholder="+ 할 일 추가..." onkeydown="if(event.key==='Enter')addTask('d3')">
+      <button class="add-task-btn" onclick="addTask('d3')">+ 추가</button>
+    </div>
+    <div class="day-memo-wrap">
+      <label>📝 오늘 메모</label>
+      <textarea class="day-memo-box" id="day-memo-d3" placeholder="오늘 작업 내용, 특이사항..." oninput="saveDayMemo('d3')"></textarea>
+      <div style="margin-top:7px;" class="flex-row">
+        <button class="carry-btn" onclick="carryToNext('d3','d4')">📦 미완료 → 목요일 이월</button>
+      </div>
+    </div>
+    <div id="upload-d3"></div>
+  </div>
+
+  <!-- 목요일 -->
+  <div class="day-content" id="day-d4">
+    <div class="day-date-header">
+      <span class="day-date-badge d4-date" id="date-d4">🟡 목요일</span>
+      <div class="flex-row">
+        <button class="day-copy-btn" onclick="copyDaySchedule('d4')">📋 복사</button>
+        <a class="link-btn genspark" href="https://www.genspark.ai" target="_blank">🤖 Genspark</a>
+        <a class="link-btn threads" href="https://www.threads.net/@bapsim.longevity" target="_blank">🧵 Threads</a>
+      </div>
+    </div>
+    <div class="day-goal d4-goal">🎯 목표: 다음 주 콘텐츠 스톡 확보</div>
+    <table class="check-table">
+      <thead><tr><th>✓</th><th>시간</th><th class="task-text">업무</th><th>채팅방</th><th>소요</th></tr></thead>
+      <tbody id="tasks-d4">
+        <tr><td class="check-cell"><input type="checkbox" data-key="week-d4-0" onchange="toggleRow(this);saveCheck(this);maybeSort(this)"></td><td>10:00~12:00</td><td class="task-text">다음 주 Threads 포스트 스톡 2~3개</td><td>🌿 밥심</td><td>120분</td></tr>
+        <tr><td class="check-cell"><input type="checkbox" data-key="week-d4-1" onchange="toggleRow(this);saveCheck(this);maybeSort(this)"></td><td>12:00~13:00</td><td class="task-text">에세이집 원고 작업</td><td>선택</td><td>60분</td></tr>
+        <tr><td class="check-cell"><input type="checkbox" data-key="week-d4-2" onchange="toggleRow(this);saveCheck(this);maybeSort(this)"></td><td>13:00~14:00</td><td class="task-text">댓글 답변 + 타계정 교류</td><td>직접</td><td>60분</td></tr>
+      </tbody>
+    </table>
+    <div class="add-task-row">
+      <input type="text" class="add-task-input" id="add-d4" placeholder="+ 할 일 추가..." onkeydown="if(event.key==='Enter')addTask('d4')">
+      <button class="add-task-btn" onclick="addTask('d4')">+ 추가</button>
+    </div>
+    <div class="day-memo-wrap">
+      <label>📝 오늘 메모</label>
+      <textarea class="day-memo-box" id="day-memo-d4" placeholder="오늘 작업 내용, 특이사항..." oninput="saveDayMemo('d4')"></textarea>
+      <div style="margin-top:7px;" class="flex-row">
+        <button class="carry-btn" onclick="carryToNext('d4','d5')">📦 미완료 → 금요일 이월</button>
+      </div>
+    </div>
+    <div id="upload-d4"></div>
+  </div>
+
+  <!-- 금요일 -->
+  <div class="day-content" id="day-d5">
+    <div class="day-date-header">
+      <span class="day-date-badge d5-date" id="date-d5">🔴 금요일</span>
+      <div class="flex-row">
+        <button class="day-copy-btn" onclick="copyDaySchedule('d5')">📋 복사</button>
+        <a class="link-btn genspark" href="https://www.genspark.ai" target="_blank">🤖 Super Agent</a>
+      </div>
+    </div>
+    <div class="day-goal d5-goal">🎯 목표: 성과 분석, 전략 조정, 다음 주 방향 확정</div>
+    <table class="check-table">
+      <thead><tr><th>✓</th><th>시간</th><th class="task-text">업무</th><th>채팅방</th><th>소요</th></tr></thead>
+      <tbody id="tasks-d5">
+        <tr><td class="check-cell"><input type="checkbox" data-key="week-d5-0" onchange="toggleRow(this);saveCheck(this);maybeSort(this)"></td><td>10:00~11:00</td><td class="task-text">주간 성과 정리 (채널 수치 메모)</td><td>직접</td><td>60분</td></tr>
+        <tr><td class="check-cell"><input type="checkbox" data-key="week-d5-1" onchange="toggleRow(this);saveCheck(this);maybeSort(this)"></td><td>11:00~13:00</td><td class="task-text">Super Agent 주간 검토</td><td>📊 허브</td><td>120분</td></tr>
+        <tr><td class="check-cell"><input type="checkbox" data-key="week-d5-2" onchange="toggleRow(this);saveCheck(this);maybeSort(this)"></td><td>13:00~14:00</td><td class="task-text">다음 주 계획 확정 + 메모</td><td>📊 허브</td><td>60분</td></tr>
+      </tbody>
+    </table>
+    <div class="add-task-row">
+      <input type="text" class="add-task-input" id="add-d5" placeholder="+ 할 일 추가..." onkeydown="if(event.key==='Enter')addTask('d5')">
+      <button class="add-task-btn" onclick="addTask('d5')">+ 추가</button>
+    </div>
+    <div class="day-memo-wrap">
+      <label>📝 오늘 메모</label>
+      <textarea class="day-memo-box" id="day-memo-d5" placeholder="이번 주 총평, 다음 주 방향..." oninput="saveDayMemo('d5')"></textarea>
+    </div>
+    <div id="upload-d5"></div>
+  </div>
+
+  <!-- 토요일 -->
+  <div class="day-content" id="day-d6">
+    <div class="day-date-header">
+      <span class="day-date-badge d6-date" id="date-d6">⚫ 토요일</span>
+      <div class="flex-row">
+        <a class="link-btn pinterest" href="https://www.pinterest.com" target="_blank">📌 Pinterest</a>
+        <a class="link-btn threads" href="https://www.threads.net/@bapsim.longevity" target="_blank">🧵 Threads</a>
+      </div>
+    </div>
+    <div class="day-goal d6-goal">🎯 금요일 예약 발행일 — 업로드 확인만</div>
+    <div class="day-memo-wrap" style="margin-top:0;border-top:none;padding-top:0;">
+      <label>📝 메모</label>
+      <textarea class="day-memo-box" id="day-memo-d6" placeholder="특이사항..." oninput="saveDayMemo('d6')"></textarea>
+    </div>
+    <div id="upload-d6"></div>
+  </div>
+
+  <!-- 일요일 -->
+  <div class="day-content" id="day-d7">
+    <div class="day-date-header">
+      <span class="day-date-badge d7-date" id="date-d7">⚫ 일요일</span>
+      <div class="flex-row">
+        <a class="link-btn pinterest" href="https://www.pinterest.com" target="_blank">📌 Pinterest</a>
+      </div>
+    </div>
+    <div class="day-goal d7-goal">🎯 금요일 예약 발행일 — Pinterest 확인만 (Threads 휴일)</div>
+    <div class="day-memo-wrap" style="margin-top:0;border-top:none;padding-top:0;">
+      <label>📝 메모</label>
+      <textarea class="day-memo-box" id="day-memo-d7" placeholder="특이사항..." oninput="saveDayMemo('d7')"></textarea>
+    </div>
+    <div id="upload-d7"></div>
+  </div>
+
+  <!-- 일간 요약 박스 -->
+  <div class="daily-summary-box" id="dailySummaryBox">
+    <h3>📋 오늘의 업무 요약</h3>
+    <div class="summary-content" id="dailySummaryContent"></div>
+    <div class="summary-actions">
+      <button class="action-btn btn-green" onclick="copyText(document.getElementById('dailySummaryContent').innerText)">📋 복사</button>
+      <button class="action-btn btn-md" onclick="copyDailySummaryMd()">📝 MD 복사</button>
+      <button class="action-btn btn-gray" onclick="document.getElementById('dailySummaryBox').style.display='none'">✕ 닫기</button>
+    </div>
+  </div>
+  <div class="next-btn-wrap"><button class="next-btn" onclick="scrollToSection('sec2')">다음 → 시작 지침 🗂️</button></div>
+</section>
+
+<!-- ===== 섹션 2: 시작 지침 ===== -->
+<section id="sec2" class="s2">
+  <div class="section-title">🗂️ 채팅방별 시작 지침</div>
+  <div class="section-sub">처음 열 때 복사해서 붙여넣기. 이후엔 <strong>"오늘 할 일: ___"</strong> 한 줄만 입력. 내용 수정 후 자동 저장됩니다.</div>
+
+  <div class="guide-block">
+    <div class="guide-header g1" onclick="toggleGuide('guide1')">
+      <span><span class="guide-tag t1">밥심 콘텐츠</span> 채팅방 1</span>
+      <span><button class="copy-btn" onclick="event.stopPropagation();copyGuide('guide1')">📋 복사</button><button class="toggle-btn">▼</button></span>
+    </div>
+    <div class="guide-body" id="guide1">
+      <div class="btn-row">
+        <a class="link-btn genspark" href="https://www.genspark.ai" target="_blank">🤖 채팅방 열기</a>
+        <a class="link-btn threads" href="https://www.threads.net/@bapsim.longevity" target="_blank">🧵 Threads</a>
+        <a class="link-btn pinterest" href="https://www.pinterest.com" target="_blank">📌 Pinterest</a>
+      </div>
+      <textarea class="guide-edit-area" id="guide1-text" oninput="saveGuideText('guide1-text')">나는 @bapsim.longevity (Threads) 와 Pinterest를 운영하는 한국인 아티스트이자 K-health 콘텐츠 크리에이터야.
+
+[나에 대해]
+- 15년간 원인 불명의 만성 통증을 앓고 있음
+- 한국 전통 음식과 36가지 보충제로 자가 실험 중
+- 아직 완치되지 않았지만, 통증과 공존하는 법을 배우는 중
+- 화가이자 엄마 (아이 이름: Uju)
+
+[계정 정보]
+- @bapsim.longevity Threads 바이오:
+  "To everyone who is exhausted by pain and feels like no one is listening.
+   Traditional Korean food for modern chronic pain 🌿 Mother | Artist | A 15-Year Journey with Pain | Still Standing Strong"
+- 팔로워: 약 1,000명, 20개국 도달
+- 언어: 영어 (주), 한국어 (부)
+
+[콘텐츠 방향]
+- 거짓말하지 않음, 아직 완치되지 않았다는 사실을 숨기지 않음
+- 건강 정보 + 개인 스토리 결합
+- 한국 전통 음식 (된장, 김치, 나물 등)이 만성 통증에 미치는 영향
+
+[오늘의 요청]
+(여기에 오늘 작업할 내용 입력)
+예: "오늘 Threads 포스트 1개 써줘. 주제: 된장찌개와 염증 감소"</textarea>
+      <div class="guide-save-info" id="guide-save-guide1-text"></div>
+      <div class="memo-section">
+        <label>📝 진행 메모</label>
+        <textarea class="memo-box" id="memo-room1" placeholder="오늘 작업 내용, 결과물 링크, 메모 등..." oninput="saveMemo('room1')"></textarea>
+        <div class="memo-saved" id="memo-saved-room1"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="guide-block">
+    <div class="guide-header g2" onclick="toggleGuide('guide2')">
+      <span><span class="guide-tag t2">okki_artwork 수익화</span> 채팅방 2</span>
+      <span><button class="copy-btn" onclick="event.stopPropagation();copyGuide('guide2')">📋 복사</button><button class="toggle-btn">▼</button></span>
+    </div>
+    <div class="guide-body" id="guide2">
+      <div class="btn-row">
+        <a class="link-btn genspark" href="https://www.genspark.ai" target="_blank">🤖 채팅방 열기</a>
+        <a class="link-btn instagram" href="https://www.instagram.com/okki_artwork" target="_blank">📸 Instagram</a>
+        <a class="link-btn etsy" href="https://www.etsy.com/shop/manager" target="_blank">🛒 Etsy</a>
+      </div>
+      <textarea class="guide-edit-area" id="guide2-text" oninput="saveGuideText('guide2-text')">나는 @okki_artwork (Instagram, Threads) 를 운영하는 한국인 화가야.
+
+[나에 대해]
+- 전직 엔지니어, 현재 화가
+- 15년 만성 통증 → 그림이 유일한 탈출구
+- 팔로워 5,132명 (Instagram), 351개 게시물
+- 2026년 가을 에세이집 출판 예정
+
+[오늘의 요청]
+(여기에 오늘 작업할 내용 입력)
+예: "Etsy 상품 제목·설명·태그 13개 써줘."</textarea>
+      <div class="guide-save-info" id="guide-save-guide2-text"></div>
+      <div class="memo-section">
+        <label>📝 진행 메모</label>
+        <textarea class="memo-box" id="memo-room2" placeholder="오늘 작업 내용, 결과물 링크, 메모 등..." oninput="saveMemo('room2')"></textarea>
+        <div class="memo-saved" id="memo-saved-room2"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="guide-block">
+    <div class="guide-header g3" onclick="toggleGuide('guide3')">
+      <span><span class="guide-tag t3">MotionElements 최적화</span> 채팅방 3</span>
+      <span><button class="copy-btn" onclick="event.stopPropagation();copyGuide('guide3')">📋 복사</button><button class="toggle-btn">▼</button></span>
+    </div>
+    <div class="guide-body" id="guide3">
+      <div class="btn-row">
+        <a class="link-btn genspark" href="https://www.genspark.ai" target="_blank">🤖 채팅방 열기</a>
+        <a class="link-btn me" href="https://www.motionelements.com/dashboard" target="_blank">🎬 ME 대시보드</a>
+        <a class="link-btn me" href="https://www.motionelements.com/contributor/upload" target="_blank">⬆️ ME 업로드</a>
+      </div>
+      <textarea class="guide-edit-area" id="guide3-text" oninput="saveGuideText('guide3-text')">나는 MotionElements 크리에이터 'kimdoit' 이야.
+
+[현재 자산 현황]
+- 총 자산: 약 1,569개 / 3년 총 수익: $165.61
+
+[오늘의 요청]
+(여기에 오늘 작업할 내용 입력)
+예: "baby cry SFX 상품 설명과 태그 10개 영문으로 써줘"</textarea>
+      <div class="guide-save-info" id="guide-save-guide3-text"></div>
+      <div class="memo-section">
+        <label>📝 진행 메모</label>
+        <textarea class="memo-box" id="memo-room3" placeholder="오늘 작업 내용, 업로드한 자산 수, 메모 등..." oninput="saveMemo('room3')"></textarea>
+        <div class="memo-saved" id="memo-saved-room3"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="guide-block">
+    <div class="guide-header g4" onclick="toggleGuide('guide4')">
+      <span><span class="guide-tag t4">이미지 생성 작업실</span> 채팅방 4</span>
+      <span><button class="copy-btn" onclick="event.stopPropagation();copyGuide('guide4')">📋 복사</button><button class="toggle-btn">▼</button></span>
+    </div>
+    <div class="guide-body" id="guide4">
+      <div class="btn-row">
+        <a class="link-btn genspark" href="https://www.genspark.ai" target="_blank">🤖 채팅방 열기</a>
+        <a class="link-btn pinterest" href="https://www.pinterest.com/pin-builder/" target="_blank">📌 핀 빌더</a>
+        <a class="link-btn etsy" href="https://www.etsy.com/shop/manager" target="_blank">🛒 Etsy</a>
+      </div>
+      <textarea class="guide-edit-area" id="guide4-text" oninput="saveGuideText('guide4-text')">나는 K-health 브랜드 @bapsim.longevity와 아트 계정 @okki_artwork를 운영해.
+
+[이미지 스타일 가이드]
+- 밥심 브랜드: 자연스럽고 따뜻한 톤, 한국 전통 음식
+- okki_artwork: 섬세한 선화(line art), 모노크롬 또는 수채화 느낌
+
+[오늘의 요청]
+(여기에 오늘 작업할 내용 입력)</textarea>
+      <div class="guide-save-info" id="guide-save-guide4-text"></div>
+      <div class="memo-section">
+        <label>📝 진행 메모</label>
+        <textarea class="memo-box" id="memo-room4" placeholder="생성한 이미지 파일명, 저장 위치, 메모 등..." oninput="saveMemo('room4')"></textarea>
+        <div class="memo-saved" id="memo-saved-room4"></div>
+      </div>
+    </div>
+  </div>
+  <div class="next-btn-wrap"><button class="next-btn" onclick="scrollToSection('sec3')">다음 → 체크리스트 📋</button></div>
+</section>
+
+<!-- ===== 섹션 3: 즉시 체크리스트 ===== -->
+<section id="sec3" class="s3">
+  <div class="section-title">📋 즉시 체크리스트</div>
+  <div class="section-sub">이번 주 내 완료해야 할 항목들입니다. 체크하면 자동으로 하단으로 이동합니다.</div>
+  <div class="progress-wrap">
+    <div class="progress-label"><span>진행률</span><span id="progress5Text">0 / 6 완료</span></div>
+    <div class="progress-bar"><div class="progress-fill" id="progress5Fill" style="width:0%"></div></div>
+  </div>
+  <table class="check-table" id="table5">
+    <thead><tr><th>✓</th><th>#</th><th class="task-text">할 일</th><th>바로가기</th><th>예상</th><th></th></tr></thead>
+    <tbody id="checklist5-body">
+      <tr><td class="check-cell"><input type="checkbox" data-key="now-0" onchange="toggleRow(this);saveCheck(this);updateProgress();sortChecked(this)"></td><td>1</td><td class="task-text">Linktree 계정 생성</td><td><a class="link-btn" href="https://linktr.ee" target="_blank" style="background:#f0fff0;color:#43a047;border-color:#43a047;">🌿 Linktree</a></td><td>30분</td><td></td></tr>
+      <tr><td class="check-cell"><input type="checkbox" data-key="now-1" onchange="toggleRow(this);saveCheck(this);updateProgress();sortChecked(this)"></td><td>2</td><td class="task-text">Threads 바이오에 Linktree 링크 삽입</td><td><a class="link-btn threads" href="https://www.threads.net/@bapsim.longevity" target="_blank">🧵 Threads</a></td><td>10분</td><td></td></tr>
+      <tr><td class="check-cell"><input type="checkbox" data-key="now-2" onchange="toggleRow(this);saveCheck(this);updateProgress();sortChecked(this)"></td><td>3</td><td class="task-text">Instagram 바이오 업데이트 (영문 추가)</td><td><a class="link-btn instagram" href="https://www.instagram.com/okki_artwork" target="_blank">📸 IG</a></td><td>10분</td><td></td></tr>
+      <tr><td class="check-cell"><input type="checkbox" data-key="now-3" onchange="toggleRow(this);saveCheck(this);updateProgress();sortChecked(this)"></td><td>4</td><td class="task-text">Etsy 계정 생성 + 스토어 설정</td><td><a class="link-btn etsy" href="https://www.etsy.com/sell" target="_blank">🛒 Etsy</a></td><td>30분</td><td></td></tr>
+      <tr><td class="check-cell"><input type="checkbox" data-key="now-4" onchange="toggleRow(this);saveCheck(this);updateProgress();sortChecked(this)"></td><td>5</td><td class="task-text">Etsy 첫 디지털 다운로드 상품 1개 등록</td><td><a class="link-btn etsy" href="https://www.etsy.com/shop/manager/listings/create" target="_blank">🛒 상품등록</a></td><td>60분</td><td></td></tr>
+      <tr><td class="check-cell"><input type="checkbox" data-key="now-5" onchange="toggleRow(this);saveCheck(this);updateProgress();sortChecked(this)"></td><td>6</td><td class="task-text">MotionElements 상위 10개 자산 태그 재정비</td><td><a class="link-btn me" href="https://www.motionelements.com/dashboard" target="_blank">🎬 ME</a></td><td>60분</td><td></td></tr>
+    </tbody>
+  </table>
+  <div class="add-task-row" style="margin-top:12px;">
+    <input type="text" class="add-task-input" id="add-checklist5" placeholder="+ 새 항목 추가..." onkeydown="if(event.key==='Enter')addChecklistItem()">
+    <button class="add-task-btn" onclick="addChecklistItem()">+ 추가</button>
+  </div>
+  <div class="section-memo-wrap">
+    <label>📝 체크리스트 메모</label>
+    <textarea class="section-memo-area" id="memo-checklist5" placeholder="체크리스트 관련 메모..." oninput="saveSectionMemo('checklist5')"></textarea>
+  </div>
+  <div class="next-btn-wrap"><button class="next-btn" onclick="scrollToSection('sec4')">다음 → 마일스톤 🔁</button></div>
+</section>
+
+<!-- ===== 섹션 4: 마일스톤 ===== -->
+<section id="sec4" class="s4">
+  <div class="section-title">🔁 시기별 마일스톤 <span style="font-size:0.75rem;font-weight:400;color:#888;">(그룹 클릭 → 접기/펴기)</span></div>
+  <div class="section-sub">달성 시 체크하세요. 마일스톤은 주간 초기화에 포함되지 않습니다.</div>
+
+  <!-- 3월 말 -->
+  <div class="milestone-group" id="mg-mar">
+    <div class="milestone-group-header mh-yellow" onclick="toggleMsGroup('mar')">
+      <span class="badge badge-yellow">🟡 3월 말 (3/25~3/31)</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="mg-mar-pct" style="font-size:0.78rem;color:#7b5800;font-weight:700;">0 / 5 완료</span>
+        <span class="collapse-icon open" id="mg-mar-icon">▲</span>
+      </div>
+    </div>
+    <div class="milestone-group-body" id="mg-mar-body">
+      <div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" id="mg-mar-bar" style="width:0%"></div></div></div>
+      <div class="ms-item-toggle" onclick="toggleMsItems('mar')"><span id="ms-mar-toggle-icon">▼</span> 항목 접기/펴기</div>
+      <div id="ms-items-mar">
+        <table class="check-table"><thead><tr><th>✓</th><th class="task-text">할 일</th><th>마감</th><th></th></tr></thead>
+        <tbody id="ms-body-mar">
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-mar-0" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('mar');sortChecked(this)"></td><td class="task-text">OpenAI 구독 취소 확인</td><td>3/30</td><td></td></tr>
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-mar-1" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('mar');sortChecked(this)"></td><td class="task-text">Gemini → Google Workspace 전환</td><td>4/9전</td><td></td></tr>
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-mar-2" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('mar');sortChecked(this)"></td><td class="task-text">Replit 코드 GitHub export (백업)</td><td>3월 말</td><td></td></tr>
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-mar-3" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('mar');sortChecked(this)"></td><td class="task-text">k-healthsecrets.com 도메인 만료일 확인</td><td>3월 말</td><td></td></tr>
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-mar-4" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('mar');sortChecked(this)"></td><td class="task-text">Amazon Associates 계정 신청</td><td>3월 말</td><td></td></tr>
+        </tbody></table>
+        <div class="add-task-row"><input type="text" class="add-task-input" id="add-ms-mar" placeholder="+ 항목 추가..." onkeydown="if(event.key==='Enter')addMsItem('mar')"><button class="add-task-btn" onclick="addMsItem('mar')">+ 추가</button></div>
+      </div>
+      <div class="section-memo-wrap"><label>📝 메모</label><textarea class="section-memo-area" id="memo-ms-mar" placeholder="3월 말 마일스톤 메모..." oninput="saveSectionMemo('ms-mar')"></textarea></div>
+    </div>
+  </div>
+
+  <!-- 4월 -->
+  <div class="milestone-group" id="mg-apr">
+    <div class="milestone-group-header mh-yellow" onclick="toggleMsGroup('apr')">
+      <span class="badge badge-yellow">🟡 4월 (팔로워 1,500+ 달성 시)</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="mg-apr-pct" style="font-size:0.78rem;color:#7b5800;font-weight:700;">0 / 4 완료</span>
+        <span class="collapse-icon open" id="mg-apr-icon">▲</span>
+      </div>
+    </div>
+    <div class="milestone-group-body" id="mg-apr-body">
+      <div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" id="mg-apr-bar" style="width:0%"></div></div></div>
+      <div class="ms-item-toggle" onclick="toggleMsItems('apr')"><span id="ms-apr-toggle-icon">▼</span> 항목 접기/펴기</div>
+      <div id="ms-items-apr">
+        <table class="check-table"><thead><tr><th>✓</th><th class="task-text">할 일</th><th></th></tr></thead>
+        <tbody id="ms-body-apr">
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-apr-0" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('apr');sortChecked(this)"></td><td class="task-text">Pinterest 링크 핀 테스트 시작 (1일 1개)</td><td></td></tr>
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-apr-1" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('apr');sortChecked(this)"></td><td class="task-text">Etsy 5개 이상 상품 등록 완료</td><td></td></tr>
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-apr-2" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('apr');sortChecked(this)"></td><td class="task-text">Amazon 제휴 링크 Linktree에 추가</td><td></td></tr>
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-apr-3" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('apr');sortChecked(this)"></td><td class="task-text">MotionElements baby SFX 5개 이상 업로드</td><td></td></tr>
+        </tbody></table>
+        <div class="add-task-row"><input type="text" class="add-task-input" id="add-ms-apr" placeholder="+ 항목 추가..." onkeydown="if(event.key==='Enter')addMsItem('apr')"><button class="add-task-btn" onclick="addMsItem('apr')">+ 추가</button></div>
+      </div>
+      <div class="section-memo-wrap"><label>📝 메모</label><textarea class="section-memo-area" id="memo-ms-apr" placeholder="4월 마일스톤 메모..." oninput="saveSectionMemo('ms-apr')"></textarea></div>
+    </div>
+  </div>
+
+  <!-- 3000 -->
+  <div class="milestone-group" id="mg-3k">
+    <div class="milestone-group-header mh-green" onclick="toggleMsGroup('3k')">
+      <span class="badge badge-green">🟢 팔로워 3,000 달성 시</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="mg-3k-pct" style="font-size:0.78rem;color:#1b4332;font-weight:700;">0 / 3 완료</span>
+        <span class="collapse-icon open" id="mg-3k-icon">▲</span>
+      </div>
+    </div>
+    <div class="milestone-group-body" id="mg-3k-body">
+      <div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" id="mg-3k-bar" style="width:0%"></div></div></div>
+      <div class="ms-item-toggle" onclick="toggleMsItems('3k')"><span id="ms-3k-toggle-icon">▼</span> 항목 접기/펴기</div>
+      <div id="ms-items-3k">
+        <table class="check-table"><thead><tr><th>✓</th><th class="task-text">할 일</th><th></th></tr></thead>
+        <tbody id="ms-body-3k">
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-3k-0" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('3k');sortChecked(this)"></td><td class="task-text">Linktree에 Etsy + Amazon 링크 정식 연결</td><td></td></tr>
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-3k-1" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('3k');sortChecked(this)"></td><td class="task-text">Threads 수익화 링크 공개 공지 포스트</td><td></td></tr>
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-3k-2" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('3k');sortChecked(this)"></td><td class="task-text">Pinterest 전략 확대 (1일 3핀)</td><td></td></tr>
+        </tbody></table>
+        <div class="add-task-row"><input type="text" class="add-task-input" id="add-ms-3k" placeholder="+ 항목 추가..." onkeydown="if(event.key==='Enter')addMsItem('3k')"><button class="add-task-btn" onclick="addMsItem('3k')">+ 추가</button></div>
+      </div>
+      <div class="section-memo-wrap"><label>📝 메모</label><textarea class="section-memo-area" id="memo-ms-3k" placeholder="팔로워 3,000 달성 메모..." oninput="saveSectionMemo('ms-3k')"></textarea></div>
+    </div>
+  </div>
+
+  <!-- 5000 -->
+  <div class="milestone-group" id="mg-5k">
+    <div class="milestone-group-header mh-green" onclick="toggleMsGroup('5k')">
+      <span class="badge badge-green">🟢 팔로워 5,000 달성 시 (Threads)</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="mg-5k-pct" style="font-size:0.78rem;color:#1b4332;font-weight:700;">0 / 3 완료</span>
+        <span class="collapse-icon open" id="mg-5k-icon">▲</span>
+      </div>
+    </div>
+    <div class="milestone-group-body" id="mg-5k-body">
+      <div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" id="mg-5k-bar" style="width:0%"></div></div></div>
+      <div class="ms-item-toggle" onclick="toggleMsItems('5k')"><span id="ms-5k-toggle-icon">▼</span> 항목 접기/펴기</div>
+      <div id="ms-items-5k">
+        <table class="check-table"><thead><tr><th>✓</th><th class="task-text">할 일</th><th></th></tr></thead>
+        <tbody id="ms-body-5k">
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-5k-0" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('5k');sortChecked(this)"></td><td class="task-text">Substack 뉴스레터 개설 검토</td><td></td></tr>
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-5k-1" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('5k');sortChecked(this)"></td><td class="task-text">iHerb 제휴 프로그램 신청</td><td></td></tr>
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-5k-2" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('5k');sortChecked(this)"></td><td class="task-text">에세이집 사전예약 링크 연결</td><td></td></tr>
+        </tbody></table>
+        <div class="add-task-row"><input type="text" class="add-task-input" id="add-ms-5k" placeholder="+ 항목 추가..." onkeydown="if(event.key==='Enter')addMsItem('5k')"><button class="add-task-btn" onclick="addMsItem('5k')">+ 추가</button></div>
+      </div>
+      <div class="section-memo-wrap"><label>📝 메모</label><textarea class="section-memo-area" id="memo-ms-5k" placeholder="팔로워 5,000 달성 메모..." oninput="saveSectionMemo('ms-5k')"></textarea></div>
+    </div>
+  </div>
+
+  <!-- 에세이 -->
+  <div class="milestone-group" id="mg-book">
+    <div class="milestone-group-header mh-book" onclick="toggleMsGroup('book')">
+      <span class="badge badge-book">📘 2026년 가을 — 에세이집 출판 전</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="mg-book-pct" style="font-size:0.78rem;color:#4a1072;font-weight:700;">0 / 5 완료</span>
+        <span class="collapse-icon open" id="mg-book-icon">▲</span>
+      </div>
+    </div>
+    <div class="milestone-group-body" id="mg-book-body">
+      <div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" id="mg-book-bar" style="width:0%"></div></div></div>
+      <div class="ms-item-toggle" onclick="toggleMsItems('book')"><span id="ms-book-toggle-icon">▼</span> 항목 접기/펴기</div>
+      <div id="ms-items-book">
+        <table class="check-table"><thead><tr><th>✓</th><th class="task-text">할 일</th><th></th></tr></thead>
+        <tbody id="ms-body-book">
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-book-0" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('book');sortChecked(this)"></td><td class="task-text">@okki_artwork Instagram 재활성화 계획 수립</td><td></td></tr>
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-book-1" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('book');sortChecked(this)"></td><td class="task-text">에세이집 Etsy 전자책 버전 판매 준비</td><td></td></tr>
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-book-2" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('book');sortChecked(this)"></td><td class="task-text">에세이집 × Bapsim 브랜드 통합 캠페인 기획</td><td></td></tr>
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-book-3" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('book');sortChecked(this)"></td><td class="task-text">YouTube @okki_artwork 북트레일러 영상 기획</td><td></td></tr>
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-book-4" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('book');sortChecked(this)"></td><td class="task-text">TikTok @peaceful_uju 재활성화 또는 신규 계정 전환 결정</td><td></td></tr>
+        </tbody></table>
+        <div class="add-task-row"><input type="text" class="add-task-input" id="add-ms-book" placeholder="+ 항목 추가..." onkeydown="if(event.key==='Enter')addMsItem('book')"><button class="add-task-btn" onclick="addMsItem('book')">+ 추가</button></div>
+      </div>
+      <div class="section-memo-wrap"><label>📝 메모</label><textarea class="section-memo-area" id="memo-ms-book" placeholder="에세이집 출판 관련 메모..." oninput="saveSectionMemo('ms-book')"></textarea></div>
+    </div>
+  </div>
+
+  <!-- 분기 -->
+  <div class="milestone-group" id="mg-q">
+    <div class="milestone-group-header mh-repeat" onclick="toggleMsGroup('q')">
+      <span class="badge badge-repeat">🔁 분기별 반복 (3개월마다)</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span id="mg-q-pct" style="font-size:0.78rem;color:#333;font-weight:700;">0 / 4 완료</span>
+        <span class="collapse-icon open" id="mg-q-icon">▲</span>
+      </div>
+    </div>
+    <div class="milestone-group-body" id="mg-q-body">
+      <div class="progress-wrap"><div class="progress-bar"><div class="progress-fill" id="mg-q-bar" style="width:0%"></div></div></div>
+      <div class="ms-item-toggle" onclick="toggleMsItems('q')"><span id="ms-q-toggle-icon">▼</span> 항목 접기/펴기</div>
+      <div id="ms-items-q">
+        <table class="check-table"><thead><tr><th>✓</th><th class="task-text">할 일</th><th></th></tr></thead>
+        <tbody id="ms-body-q">
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-q-0" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('q');sortChecked(this)"></td><td class="task-text">MotionElements 수익 리포트 다운로드 + 분석</td><td></td></tr>
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-q-1" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('q');sortChecked(this)"></td><td class="task-text">Etsy 키워드 트렌드 재조사 (에시랭크 활용)</td><td></td></tr>
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-q-2" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('q');sortChecked(this)"></td><td class="task-text">상위 Pinterest 핀 재활용 (동일 이미지 재업로드)</td><td></td></tr>
+          <tr><td class="check-cell"><input type="checkbox" data-key="ms-q-3" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('q');sortChecked(this)"></td><td class="task-text">Genspark 크레딧 소진 현황 확인</td><td></td></tr>
+        </tbody></table>
+        <div class="add-task-row"><input type="text" class="add-task-input" id="add-ms-q" placeholder="+ 항목 추가..." onkeydown="if(event.key==='Enter')addMsItem('q')"><button class="add-task-btn" onclick="addMsItem('q')">+ 추가</button></div>
+      </div>
+      <div class="section-memo-wrap"><label>📝 메모</label><textarea class="section-memo-area" id="memo-ms-q" placeholder="분기별 반복 메모..." oninput="saveSectionMemo('ms-q')"></textarea></div>
+    </div>
+  </div>
+  <div class="next-btn-wrap"><button class="next-btn" onclick="scrollToSection('sec5')">다음 → 운영 팁 💡</button></div>
+</section>
+
+<!-- ===== 섹션 5: 핵심 운영 원칙 ===== -->
+<section id="sec5" class="s5">
+  <div class="collapsible-header" onclick="toggleSection('tips-body','tips-icon')">
+    <div class="section-title">💡 핵심 운영 원칙</div>
+    <span class="collapse-icon open" id="tips-icon">▲</span>
+  </div>
+  <div id="tips-body">
+    <div class="section-sub" style="font-weight:700;color:#1b4332;margin-top:10px;">"평일은 Chat Agent (0크레딧) | 금요일만 Super Agent (크레딧)"</div>
+    <div class="tip-grid">
+      <div class="tip-card"><strong>🔗 맥락 누적의 힘</strong>같은 채팅방을 계속 사용하면 AI가 내 브랜드 톤·스토리·목표를 기억해서 점점 짧은 지시로 더 좋은 결과가 나옵니다.</div>
+      <div class="tip-card"><strong>✏️ 시작 지침은 수정 OK</strong>처음 한 번만 붙여넣고, 이후엔 "오늘 할 일: ___" 한 줄만 입력하면 됩니다.</div>
+      <div class="tip-card"><strong>🖼️ 이미지 채팅방은 새로 열어도 됨</strong>이미지 생성은 맥락 누적 효과가 작으므로 요청마다 새 채팅방을 열어도 무방합니다.</div>
+      <div class="tip-card"><strong>📊 Super Agent는 금요일에만</strong>평일엔 Chat Agent로 모든 콘텐츠 작업을 완결하고, Super Agent는 금요일 주간 검토에만 사용합니다.</div>
+    </div>
+    <div style="margin-top:16px;text-align:center;padding:12px;background:#f0fff4;border-radius:10px;border:1px dashed #95d5b2;font-size:0.83rem;color:#2d6a4f;">📅 다음 업데이트: 매주 금요일 Super Agent 검토 시</div>
+  </div>
+  <div class="next-btn-wrap"><button class="next-btn" onclick="scrollToSection('sec6')">다음 → 내보내기 📤</button></div>
+</section>
+
+<!-- ===== 섹션 6: 내보내기 ===== -->
+<section id="sec6" class="s6">
+  <div class="section-title">📤 보고서 내보내기</div>
+  <div class="section-sub">일간·주간 보고서를 HTML 파일로 저장합니다.</div>
+  <div class="export-grid">
+    <div class="export-card">
+      <h3>📅 일간 보고서</h3>
+      <p>오늘 한일/못한일, 채팅방 메모, 장기목표 진행률 시각화를 포함해 저장합니다.</p>
+      <div class="flex-row">
+        <button class="action-btn btn-blue" onclick="exportDailyReport()">📥 HTML 저장</button>
+        <button class="action-btn btn-md" onclick="copyDailyReportMd()">📝 MD 복사</button>
+      </div>
+    </div>
+    <div class="export-card">
+      <h3>📊 주간 보고서</h3>
+      <p>성과 보고서 입력 내용 + 체크 항목 + 마일스톤 진행률을 포함해 저장합니다.</p>
+      <div class="flex-row">
+        <button class="action-btn btn-green" onclick="exportWeeklyReport()">📥 HTML 저장</button>
+        <button class="action-btn btn-md" onclick="copyReportMd()">📝 MD 복사</button>
+      </div>
+    </div>
+  </div>
+  <div class="next-btn-wrap"><button class="next-btn" onclick="scrollToSection('sec7')">다음 → 성과 보고 📊</button></div>
+</section>
+
+<!-- ===== 섹션 7: 주간 성과 보고서 ===== -->
+<section id="sec7" class="s7">
+  <div class="collapsible-header" onclick="toggleSection('report-body','report-icon')">
+    <div class="section-title">📊 주간 성과 보고서</div>
+    <span class="collapse-icon open" id="report-icon">▲</span>
+  </div>
+  <div id="report-body">
+    <div class="section-sub" style="margin-top:10px;">매주 금요일 작성 후 Super Agent에 붙여넣기 하세요.</div>
+    <div class="report-form">
+      <div class="report-section-title">📅 기본 정보</div>
+      <div class="report-grid-2">
+        <div class="report-field"><label>주차</label><input type="text" id="rf-week" placeholder="예: 12주차"></div>
+        <div class="report-field"><label>날짜</label><input type="text" id="rf-date"></div>
+      </div>
+      <div class="report-section-title">🧵 Threads @bapsim.longevity</div>
+      <div class="report-grid-2">
+        <div class="report-field"><label>팔로워</label><input type="text" id="rf-th-followers" placeholder="예: 1,050"></div>
+        <div class="report-field"><label>전주 대비</label><input type="text" id="rf-th-diff" placeholder="예: +50"></div>
+        <div class="report-field"><label>포스트 수</label><input type="text" id="rf-th-posts" placeholder="예: 3개"></div>
+        <div class="report-field"><label>좋아요/댓글 최고</label><input type="text" id="rf-th-engage" placeholder="예: 42 / 8"></div>
+      </div>
+      <div class="report-field"><label>최고 반응 포스트</label><textarea id="rf-th-best" placeholder="내용 요약"></textarea></div>
+      <div class="report-section-title">📸 Instagram @okki_artwork</div>
+      <div class="report-grid-2">
+        <div class="report-field"><label>팔로워</label><input type="text" id="rf-ig-followers" placeholder="예: 5,132"></div>
+        <div class="report-field"><label>전주 대비</label><input type="text" id="rf-ig-diff" placeholder="예: +0"></div>
+        <div class="report-field"><label>게시물 수</label><input type="text" id="rf-ig-posts" placeholder="예: 1개"></div>
+        <div class="report-field"><label>릴스 조회수</label><input type="text" id="rf-ig-reels" placeholder="예: 637"></div>
+      </div>
+      <div class="report-section-title">🛒 Etsy / 📌 Pinterest / 🎬 ME</div>
+      <div class="report-grid-2">
+        <div class="report-field"><label>Etsy 누적 상품</label><input type="text" id="rf-etsy-total" placeholder="예: 3개"></div>
+        <div class="report-field"><label>Etsy 이번 주 판매</label><input type="text" id="rf-etsy-sales" placeholder="예: 0건 / $0"></div>
+        <div class="report-field"><label>Pinterest 핀 수</label><input type="text" id="rf-pin-total" placeholder="예: 15개"></div>
+        <div class="report-field"><label>Pinterest 월간 노출</label><input type="text" id="rf-pin-views" placeholder="예: 1,200회"></div>
+        <div class="report-field"><label>ME 이번 주 업로드</label><input type="text" id="rf-me-upload" placeholder="예: 2개"></div>
+        <div class="report-field"><label>ME 누적 수익</label><input type="text" id="rf-me-revenue" placeholder="예: $165.61"></div>
+      </div>
+      <div class="report-field"><label>✅ 완료한 일</label><textarea id="rf-done" placeholder="- &#10;- " style="min-height:70px;"></textarea></div>
+      <div class="report-field"><label>❌ 못한 일 & 이유</label><textarea id="rf-undone" placeholder="- &#10;- " style="min-height:55px;"></textarea></div>
+      <div class="report-field"><label>🔜 다음 주 우선순위</label><textarea id="rf-next" placeholder="1. &#10;2. &#10;3. " style="min-height:65px;"></textarea></div>
+      <div class="report-field">
+        <label>📝 추가 메모</label>
+        <textarea class="report-memo-box" id="rf-memo" placeholder="기타 특이사항, 아이디어, 다음 주 참고사항..."></textarea>
+      </div>
+      <div class="flex-row">
+        <button class="action-btn btn-green" onclick="generateReport()">📊 보고서 생성</button>
+        <button class="action-btn btn-gray" onclick="saveReportDraft()">💾 임시저장</button>
+        <button class="action-btn btn-gray" onclick="loadReportDraft()">📂 불러오기</button>
+      </div>
+    </div>
+    <div class="report-preview" id="reportPreview">
+      <div class="preview-actions">
+        <button class="action-btn btn-green" onclick="copyReportText()">📋 복사</button>
+        <button class="action-btn btn-md" onclick="copyReportMd()">📝 MD 복사</button>
+        <button class="action-btn btn-blue" onclick="exportWeeklyReport()">📥 HTML 저장</button>
+        <button class="action-btn btn-gray" onclick="document.getElementById('reportPreview').classList.remove('show')">✕ 닫기</button>
+      </div>
+      <pre id="reportPreviewContent"></pre>
+    </div>
+  </div>
+  <div class="next-btn-wrap" style="text-align:center;margin-top:18px;">
+    <button class="next-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})">⬆️ 맨 위로</button>
+  </div>
+</section>
+</main>
+<!-- Firebase -->
+<script type="module">
+import { initializeApp }                       from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, onAuthStateChanged }
+                                               from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey:"AIzaSyAy_Z0mkwpnRTwvQ2tBQTdM3LxS0Le9LVM",
+  authDomain:"bapsim-plan.firebaseapp.com",
+  databaseURL:"https://bapsim-plan-default-rtdb.firebaseio.com",
+  projectId:"bapsim-plan",
+  storageBucket:"bapsim-plan.firebasestorage.app",
+  messagingSenderId:"113028089188",
+  appId:"1:113028089188:web:86910a98a00a2ad0d16671"
+};
+
+const app=initializeApp(firebaseConfig);
+const db=getDatabase(app);
+const auth=getAuth(app);
+const provider=new GoogleAuthProvider();
+const syncEl=document.getElementById('syncStatus');
+
+function setSyncStatus(s,m){syncEl.className=s;syncEl.textContent=m;}
+
+window.signInWithGoogle=async()=>{
+  try{await signInWithPopup(auth,provider);}
+  catch(e){document.getElementById('loginError').textContent='로그인 실패: '+e.message;}
+};
+window.signOut=async()=>{
+  if(confirm('로그아웃 하시겠습니까?')) await fbSignOut(auth);
+};
+
+onAuthStateChanged(auth,async(user)=>{
+  if(user){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('userInfo').style.display='inline';
+    if(!localStorage.getItem('bapsim_uid_confirmed')){
+      document.getElementById('uidValue').textContent=user.uid;
+      document.getElementById('uidBox').style.display='block';
+      localStorage.setItem('bapsim_uid_confirmed','1');
+    }
+    setSyncStatus('syncing','⏳ 불러오는 중...');
+    try{
+      const snap=await get(ref(db,'bapsim'));
+      if(snap.exists()){
+        const d=snap.val();
+        if(d.checks) Object.entries(d.checks).forEach(([k,v])=>{
+          const cb=document.querySelector(`[data-key="${k}"]`);
+          if(cb&&v){cb.checked=true;cb.closest('tr').classList.add('done');}
+        });
+        if(d.memos) Object.entries(d.memos).forEach(([k,v])=>{
+          const el=document.getElementById('memo-'+k);if(el)el.value=v;
+        });
+        if(d.daymemos) Object.entries(d.daymemos).forEach(([k,v])=>{
+          const el=document.getElementById('day-memo-'+k);if(el)el.value=v;
+        });
+        if(d.sectionmemos) Object.entries(d.sectionmemos).forEach(([k,v])=>{
+          const el=document.getElementById('memo-'+k);if(el)el.value=v;
+        });
+        if(d.guidetexts) Object.entries(d.guidetexts).forEach(([k,v])=>{
+          const el=document.getElementById(k);if(el)el.value=v;
+        });
+        if(d.customTasks) Object.entries(d.customTasks).forEach(([dayId,tasks])=>{
+          if(Array.isArray(tasks)) tasks.forEach(t=>renderCustomTask(dayId,t));
+        });
+        if(d.customChecklist) d.customChecklist.forEach(t=>renderChecklistItem(t));
+        if(d.customMs) Object.entries(d.customMs).forEach(([grp,items])=>{
+          if(Array.isArray(items)) items.forEach(t=>renderMsItem(grp,t));
+        });
+        if(d.report) Object.entries(d.report).forEach(([k,v])=>{
+          const el=document.getElementById(k);if(el)el.value=v;
+        });
+        if(d.lastUpdated) document.getElementById('lastUpdated').textContent=d.lastUpdated;
+        if(d.floatMemo){const el=document.getElementById('floatMemoArea');if(el)el.value=d.floatMemo;}
+        if(d.uploadData) Object.entries(d.uploadData).forEach(([dayId,rows])=>{
+          uploadData[dayId]=rows;
+        });
+        if(d.contentLog) contentLog=d.contentLog;
+        if(d.planningItems) planningItems=d.planningItems;
+        if(d.uploadChecks) Object.entries(d.uploadChecks).forEach(([k,v])=>{
+          uploadChecks[k]=v;
+        });
+      }
+      updateProgress();
+      ['mar','apr','3k','5k','book','q'].forEach(g=>updateMsProgressFull(g));
+      buildAllUploadSections();
+      renderContentLog();
+      renderPlanningBoard();
+      restoreUploadChecks();
+      setSyncStatus('synced','✅ 동기화됨');
+    }catch(e){setSyncStatus('error','❌ 로드 실패');}
+
+    onValue(ref(db,'bapsim/checks'),snap=>{
+      if(!snap.exists())return;
+      Object.entries(snap.val()).forEach(([k,v])=>{
+        const cb=document.querySelector(`[data-key="${k}"]`);
+        if(cb&&cb.checked!==v){cb.checked=v;cb.closest('tr').classList.toggle('done',v);}
+      });
+      updateProgress();
+    });
+    onValue(ref(db,'bapsim/lastUpdated'),snap=>{
+      if(snap.exists()) document.getElementById('lastUpdated').textContent=snap.val();
+    });
+  }else{
+    document.getElementById('loginScreen').style.display='flex';
+    document.getElementById('userInfo').style.display='none';
+  }
+});
+
+window.fbSet=async(path,value)=>{
+  setSyncStatus('syncing','⏳ 저장 중...');
+  try{
+    await set(ref(db,path),value);
+    const now=fmtDate(new Date())+' '+fmtTime(new Date());
+    await set(ref(db,'bapsim/lastUpdated'),now);
+    document.getElementById('lastUpdated').textContent=now;
+    setSyncStatus('synced','✅ 동기화됨');
+  }catch(e){setSyncStatus('error','❌ 저장 실패');}
+};
+</script>
+
+<script>
+// ── 날짜 헬퍼 ──
+const today=new Date();
+const DAY_NAMES=['일','월','화','수','목','금','토'];
+const DAY_KEYS={1:'d1',2:'d2',3:'d3',4:'d4',5:'d5',6:'d6',0:'d7'};
+function fmtDate(d){return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;}
+function fmtTime(d){return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;}
+function fmtDateTime(d){return fmtDate(d)+' '+fmtTime(d);}
+
+document.getElementById('todayDate').textContent=`${fmtDate(today)} (${DAY_NAMES[today.getDay()]})`;
+
+function getWeekDates(){
+  const dow=today.getDay();
+  const mon=new Date(today);
+  mon.setDate(today.getDate()-(dow===0?6:dow-1));
+  const d={};
+  ['d1','d2','d3','d4','d5','d6','d7'].forEach((k,i)=>{
+    const x=new Date(mon);x.setDate(mon.getDate()+i);d[k]=x;
+  });
+  return d;
+}
+const weekDates=getWeekDates();
+const dayLabels={d1:'🟢 월',d2:'🔵 화',d3:'🟣 수',d4:'🟡 목',d5:'🔴 금',d6:'⚫ 토',d7:'⚫ 일'};
+Object.entries(weekDates).forEach(([k,d])=>{
+  const el=document.getElementById('date-'+k);
+  if(el)el.textContent=`${dayLabels[k]}요일  ${fmtDate(d)}`;
+});
+document.getElementById('rf-date').value=fmtDate(today);
+const wn=Math.ceil((Math.floor((today-new Date(today.getFullYear(),0,1))/86400000)+1)/7);
+document.getElementById('rf-week').value=wn+'주차';
+
+// ── 네비 동적 top 계산 ──
+function fixNavTop(){
+  const header=document.querySelector('header');
+  const nav=document.getElementById('mainNav');
+  if(header&&nav){
+    const hh=header.offsetHeight;
+    nav.style.top=hh+'px';
+    const navH=hh+nav.offsetHeight+8;
+    document.documentElement.style.setProperty('--nav-h',navH+'px');
+  }
+}
+window.addEventListener('load',fixNavTop);
+window.addEventListener('resize',fixNavTop);
+
+// ── UI 헬퍼 ──
+function scrollToSection(id){
+  const el=document.getElementById(id);if(!el)return;
+  const navH=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h'))||120;
+  window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-navH-8,behavior:'smooth'});
+}
+function showDay(id){
+  document.querySelectorAll('.day-content').forEach(e=>e.classList.remove('active'));
+  document.querySelectorAll('.day-tab').forEach(e=>e.classList.remove('active'));
+  const c=document.getElementById('day-'+id);if(c)c.classList.add('active');
+  document.querySelectorAll('.day-tab.'+id).forEach(e=>e.classList.add('active'));
+}
+function toggleRow(cb){cb.closest('tr').classList.toggle('done',cb.checked);}
+function toggleGuide(id){
+  const b=document.getElementById(id);b.classList.toggle('open');
+  const btn=b.previousElementSibling.querySelector('.toggle-btn');
+  if(btn)btn.textContent=b.classList.contains('open')?'▲':'▼';
+}
+function toggleSection(bodyId,iconId){
+  const body=document.getElementById(bodyId);
+  const icon=document.getElementById(iconId);
+  if(!body)return;
+  const closed=body.style.display==='none';
+  body.style.display=closed?'':'none';
+  if(icon)icon.textContent=closed?'▲':'▼';
+  if(icon)icon.classList.toggle('open',closed);
+}
+function toggleMsGroup(grp){
+  const body=document.getElementById('mg-'+grp+'-body');
+  const icon=document.getElementById('mg-'+grp+'-icon');
+  if(!body)return;
+  const closed=body.classList.contains('closed');
+  body.classList.toggle('closed',!closed);
+  if(icon){icon.textContent=closed?'▲':'▼';icon.classList.toggle('open',closed);}
+}
+function toggleMsItems(grp){
+  const el=document.getElementById('ms-items-'+grp);
+  const icon=document.getElementById('ms-'+grp+'-toggle-icon');
+  if(!el)return;
+  const closed=el.style.display==='none';
+  el.style.display=closed?'':'none';
+  if(icon)icon.textContent=closed?'▼':'▶';
+}
+
+// ── 체크된 항목 하단 정렬 ──
+function sortChecked(cb){
+  const tbody=cb.closest('tbody');if(!tbody)return;
+  const rows=[...tbody.querySelectorAll('tr')];
+  const unchecked=rows.filter(r=>!r.querySelector('input[type="checkbox"]')?.checked);
+  const checked=rows.filter(r=>r.querySelector('input[type="checkbox"]')?.checked);
+  [...unchecked,...checked].forEach(r=>tbody.appendChild(r));
+}
+function maybeSort(cb){sortChecked(cb);}
+
+// ── 저장 ──
+function saveCheck(cb){
+  const k=cb.dataset.key;if(!k)return;
+  if(window.fbSet)window.fbSet('bapsim/checks/'+k,cb.checked);
+}
+let memoTimer={};
+function saveMemo(id){
+  const el=document.getElementById('memo-'+id);
+  const sv=document.getElementById('memo-saved-'+id);
+  clearTimeout(memoTimer[id]);
+  memoTimer[id]=setTimeout(()=>{
+    if(window.fbSet)window.fbSet('bapsim/memos/'+id,el.value);
+    if(sv){sv.style.opacity='1';sv.textContent='✅ '+fmtTime(new Date())+' 저장됨';setTimeout(()=>sv.style.opacity='0',2500);}
+  },800);
+}
+let dayMemoTimer={};
+function saveDayMemo(id){
+  const el=document.getElementById('day-memo-'+id);
+  clearTimeout(dayMemoTimer[id]);
+  dayMemoTimer[id]=setTimeout(()=>{if(window.fbSet)window.fbSet('bapsim/daymemos/'+id,el.value);},800);
+}
+let sectionMemoTimer={};
+function saveSectionMemo(id){
+  const el=document.getElementById('memo-'+id);
+  clearTimeout(sectionMemoTimer[id]);
+  sectionMemoTimer[id]=setTimeout(()=>{if(window.fbSet)window.fbSet('bapsim/sectionmemos/'+id,el.value);},800);
+}
+let guideTimer={};
+function saveGuideText(id){
+  const el=document.getElementById(id);
+  const sv=document.getElementById('guide-save-'+id);
+  clearTimeout(guideTimer[id]);
+  guideTimer[id]=setTimeout(()=>{
+    if(window.fbSet)window.fbSet('bapsim/guidetexts/'+id,el.value);
+    if(sv){sv.textContent='✅ '+fmtTime(new Date())+' 저장됨';setTimeout(()=>sv.textContent='',2500);}
+  },1000);
+}
+
+// ── 플로팅 메모 ──
+function toggleFloatMemo(){
+  const pad=document.getElementById('floatMemoPad');
+  pad.classList.toggle('show');
+}
+let floatMemoTimer=null;
+function saveFloatMemo(){
+  const val=document.getElementById('floatMemoArea').value;
+  const footer=document.getElementById('floatMemoFooter');
+  clearTimeout(floatMemoTimer);
+  floatMemoTimer=setTimeout(()=>{
+    if(window.fbSet)window.fbSet('bapsim/floatMemo',val);
+    if(footer)footer.textContent='✅ '+fmtTime(new Date())+' 저장됨';
+    setTimeout(()=>{if(footer)footer.textContent='자동저장됨';},2000);
+  },800);
+}
+
+// ── 요일별 복사 ──
+const dayGoals={
+  d1:'Threads 포스트 2~3개 준비, Pinterest 핀 3~5개 업로드',
+  d2:'기존 자산 5개 최적화, 신규 자산 1~2개 업로드',
+  d3:'Etsy 상품 1개 등록, Instagram 게시물 1개',
+  d4:'다음 주 콘텐츠 스톡 확보',
+  d5:'성과 분석, 전략 조정, 다음 주 방향 확정',
+  d6:'금요일 예약 발행 확인',
+  d7:'Pinterest 발행 확인 (Threads 휴일)'
+};
+function copyDaySchedule(dayId){
+  const dateEl=document.getElementById('date-'+dayId);
+  const dateStr=dateEl?dateEl.textContent:'';
+  const goal=dayGoals[dayId]||'';
+  const tbody=document.getElementById('tasks-'+dayId);
+  let lines=[`📅 ${dateStr}  복사: ${fmtDateTime(new Date())}`,`🎯 목표: ${goal}`,``];
+  if(tbody){
+    tbody.querySelectorAll('tr').forEach(tr=>{
+      const cb=tr.querySelector('input[type="checkbox"]');
+      const cells=tr.querySelectorAll('td');
+      if(cells.length>=4){
+        const done=cb&&cb.checked?'✅':'⬜';
+        const time=cells[1]?cells[1].textContent.trim():'';
+        const task=cells[2]?cells[2].textContent.trim():'';
+        const room=cells[3]?cells[3].textContent.trim():'';
+        lines.push(`${done} ${time}  ${task}  [${room}]`);
+      }
+    });
+  }
+  const memo=document.getElementById('day-memo-'+dayId);
+  if(memo&&memo.value)lines.push(`\n📝 메모:\n${memo.value}`);
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>showToast('📋 일정이 복사되었습니다!'));
+}
+
+// ── 할 일 추가 (요일) ──
+const customTasks={d1:[],d2:[],d3:[],d4:[],d5:[],d6:[],d7:[]};
+function addTask(dayId){
+  const input=document.getElementById('add-'+dayId);
+  const text=input.value.trim();if(!text)return;
+  const task={text,id:'custom-'+dayId+'-'+Date.now()};
+  customTasks[dayId].push(task);
+  renderCustomTask(dayId,task);
+  if(window.fbSet)window.fbSet('bapsim/customTasks/'+dayId,customTasks[dayId]);
+  input.value='';
+}
+function renderCustomTask(dayId,task){
+  const tbody=document.getElementById('tasks-'+dayId);if(!tbody)return;
+  if(document.querySelector(`[data-key="${task.id}"]`))return;
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td class="check-cell"><input type="checkbox" data-key="${task.id}" onchange="toggleRow(this);saveCheck(this);maybeSort(this)"></td>
+    <td style="color:#888;font-size:0.78rem;">추가</td>
+    <td class="task-text">${task.text}</td>
+    <td>—</td>
+    <td><button class="delete-task-btn" onclick="deleteTask('${dayId}','${task.id}',this)">🗑</button></td>`;
+  tbody.appendChild(tr);
+}
+function deleteTask(dayId,taskId,btn){
+  btn.closest('tr').remove();
+  customTasks[dayId]=customTasks[dayId].filter(t=>t.id!==taskId);
+  if(window.fbSet)window.fbSet('bapsim/customTasks/'+dayId,customTasks[dayId]);
+}
+
+// ── 즉시 체크리스트 ──
+const customChecklist=[];
+function addChecklistItem(){
+  const input=document.getElementById('add-checklist5');
+  const text=input.value.trim();if(!text)return;
+  const item={text,id:'cl-'+Date.now()};
+  customChecklist.push(item);
+  renderChecklistItem(item);
+  if(window.fbSet)window.fbSet('bapsim/customChecklist',customChecklist);
+  input.value='';updateProgress();
+}
+function renderChecklistItem(item){
+  const tbody=document.getElementById('checklist5-body');if(!tbody)return;
+  if(document.querySelector(`[data-key="${item.id}"]`))return;
+  const rowCount=tbody.querySelectorAll('tr').length+1;
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td class="check-cell"><input type="checkbox" data-key="${item.id}" onchange="toggleRow(this);saveCheck(this);updateProgress();sortChecked(this)"></td>
+    <td>${rowCount}</td>
+    <td class="task-text">${item.text}</td>
+    <td>—</td><td>—</td>
+    <td><button class="delete-task-btn" onclick="deleteChecklistItem('${item.id}',this)">🗑</button></td>`;
+  tbody.appendChild(tr);
+}
+function deleteChecklistItem(itemId,btn){
+  btn.closest('tr').remove();
+  const idx=customChecklist.findIndex(i=>i.id===itemId);
+  if(idx>-1)customChecklist.splice(idx,1);
+  if(window.fbSet)window.fbSet('bapsim/customChecklist',customChecklist);
+  updateProgress();
+}
+function updateProgress(){
+  const cbs=document.querySelectorAll('#table5 input[type="checkbox"]');
+  const total=cbs.length,checked=[...cbs].filter(c=>c.checked).length;
+  document.getElementById('progress5Fill').style.width=(total?Math.round(checked/total*100):0)+'%';
+  document.getElementById('progress5Text').textContent=`${checked} / ${total} 완료`;
+}
+
+// ── 마일스톤 ──
+const customMs={mar:[],apr:[],'3k':[],'5k':[],book:[],q:[]};
+function addMsItem(grp){
+  const input=document.getElementById('add-ms-'+grp);
+  const text=input.value.trim();if(!text)return;
+  const item={text,id:'ms-custom-'+grp+'-'+Date.now()};
+  if(!customMs[grp])customMs[grp]=[];
+  customMs[grp].push(item);
+  renderMsItem(grp,item);
+  if(window.fbSet)window.fbSet('bapsim/customMs/'+grp,customMs[grp]);
+  input.value='';updateMsProgressFull(grp);
+}
+function renderMsItem(grp,item){
+  const tbody=document.getElementById('ms-body-'+grp);if(!tbody)return;
+  if(document.querySelector(`[data-key="${item.id}"]`))return;
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td class="check-cell"><input type="checkbox" data-key="${item.id}" onchange="toggleRow(this);saveCheck(this);updateMsProgressFull('${grp}');sortChecked(this)"></td>
+    <td class="task-text">${item.text}</td>
+    <td><button class="delete-task-btn" onclick="deleteMsItem('${grp}','${item.id}',this)">🗑</button></td>`;
+  tbody.appendChild(tr);
+}
+function deleteMsItem(grp,itemId,btn){
+  btn.closest('tr').remove();
+  if(customMs[grp])customMs[grp]=customMs[grp].filter(i=>i.id!==itemId);
+  if(window.fbSet)window.fbSet('bapsim/customMs/'+grp,customMs[grp]);
+  updateMsProgressFull(grp);
+}
+function updateMsProgressFull(grp){
+  const tbody=document.getElementById('ms-body-'+grp);if(!tbody)return;
+  const cbs=tbody.querySelectorAll('input[type="checkbox"]');
+  const total=cbs.length,checked=[...cbs].filter(c=>c.checked).length;
+  const pct=total?Math.round(checked/total*100):0;
+  const bar=document.getElementById('mg-'+grp+'-bar');
+  const pctEl=document.getElementById('mg-'+grp+'-pct');
+  if(bar)bar.style.width=pct+'%';
+  if(pctEl)pctEl.textContent=`${checked} / ${total} 완료`;
+}
+
+// ── 이월 ──
+function carryToNext(from,to){
+  const undone=[];
+  const tbody=document.getElementById('tasks-'+from);
+  if(tbody){
+    tbody.querySelectorAll('tr').forEach(tr=>{
+      const cb=tr.querySelector('input[type="checkbox"]');
+      const taskCell=tr.querySelector('.task-text');
+      if(cb&&!cb.checked&&taskCell)undone.push(taskCell.textContent.trim());
+    });
+  }
+  if(!undone.length){showToast('🎉 미완료 항목이 없습니다!');return;}
+  undone.forEach(text=>{
+    const task={text,id:'carry-'+to+'-'+Date.now()+'-'+Math.random().toString(36).slice(2)};
+    if(!customTasks[to])customTasks[to]=[];
+    customTasks[to].push(task);
+    renderCustomTask(to,task);
+  });
+  if(window.fbSet)window.fbSet('bapsim/customTasks/'+to,customTasks[to]);
+  showToast(`📦 ${undone.length}개 항목을 이월했습니다.`);
+}
+
+// ── 주간 초기화 ──
+function resetWeeklyChecks(){
+  if(!confirm('이번 주 업무 체크와 업로드 체크를 모두 초기화할까요?'))return;
+  document.querySelectorAll('[data-key^="week-"]').forEach(cb=>{
+    cb.checked=false;cb.closest('tr').classList.remove('done');
+    if(window.fbSet)window.fbSet('bapsim/checks/'+cb.dataset.key,false);
+  });
+  // 업로드 체크 초기화
+  Object.keys(uploadChecks).forEach(k=>{
+    uploadChecks[k]=false;
+    const cb=document.querySelector(`[data-upload-key="${k}"]`);
+    if(cb)cb.checked=false;
+  });
+  if(window.fbSet)window.fbSet('bapsim/uploadChecks',uploadChecks);
+  showToast('🔄 주간 초기화 완료');
+}
+
+// ── 복사 ──
+function copyGuide(id){
+  const el=document.getElementById(id+'-text');if(!el)return;
+  navigator.clipboard.writeText(el.value).then(()=>showToast('📋 지침이 복사되었습니다!'));
+}
+function copyText(text){
+  navigator.clipboard.writeText(text).then(()=>showToast('📋 복사되었습니다!'));
+}
+
+// ── 토스트 ──
+function showToast(msg){
+  let t=document.getElementById('toast');
+  if(!t){
+    t=document.createElement('div');t.id='toast';
+    t.style.cssText='position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#1b4332;color:#fff;padding:10px 22px;border-radius:20px;font-size:0.85rem;font-weight:600;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.2);transition:opacity .3s;pointer-events:none;';
+    document.body.appendChild(t);
+  }
+  t.textContent=msg;t.style.opacity='1';
+  setTimeout(()=>t.style.opacity='0',2200);
+}
+
+// ════════════════════════════════════════════
+// ── 업로드 일정 데이터 (수정하기 쉽게 분리) ──
+// ════════════════════════════════════════════
+const UPLOAD_SCHEDULE={
+  d1:{
+    label:'월요일',
+    principles:[
+      {note:'🧵 Threads 3회차 추가 (오후 2시) — EST 오전 1시 피크, 주초 알고리즘 부스트'}
+    ],
+    pinterest:[
+      {time:'☀️ 오전 10:00',edt:'전날 오후 9:00',item:'📌 핀 1회차',content:'🥬 식재료 건강 정보 1'},
+      {time:'🌒 오후 10:00',edt:'오전 9:00',     item:'📌 핀 2회차',content:'🥬 식재료 건강 정보 2'},
+      {time:'🌒 오후 11:00',edt:'오전 10:00',    item:'📌 핀 3회차',content:'🥬 식재료 건강 정보 3'},
+    ],
+    threads:[
+      {time:'☀️ 오전 9:00', edt:'전날 오후 8:00',item:'🧵 쓰레드 1회차',content:''},
+      {time:'🌤️ 오후 2:00', edt:'오전 1:00',     item:'🧵 쓰레드 2회차',content:''},
+      {time:'🌒 오후 10:30',edt:'오전 9:30',     item:'🧵 쓰레드 3회차 추가',content:''},
+    ]
+  },
+  d2:{
+    label:'화요일',
+    principles:[],
+    pinterest:[
+      {time:'☀️ 오전 10:00',edt:'전날 오후 9:00',item:'📌 핀 1회차',content:'🥬 식재료 건강 정보'},
+      {time:'🌒 오후 10:00',edt:'오전 9:00',     item:'📌 핀 2회차',content:'🍳 관련 레시피 1'},
+      {time:'🌒 오후 11:00',edt:'오전 10:00',    item:'📌 핀 3회차',content:'🍳 관련 레시피 2'},
+    ],
+    threads:[
+      {time:'☀️ 오전 9:00', edt:'전날 오후 8:00',item:'🧵 쓰레드 1회차',content:''},
+      {time:'🌒 오후 10:30',edt:'오전 9:30',     item:'🧵 쓰레드 2회차',content:''},
+    ]
+  },
+  d3:{
+    label:'수요일',
+    principles:[],
+    pinterest:[
+      {time:'☀️ 오전 10:00',edt:'전날 오후 9:00',item:'📌 핀 1회차',content:'🍳 관련 레시피'},
+      {time:'🌒 오후 10:00',edt:'오전 9:00',     item:'📌 핀 2회차',content:'⚠️ 피해야 할 정보 1'},
+      {time:'🌒 오후 11:00',edt:'오전 10:00',    item:'📌 핀 3회차',content:'⚠️ 피해야 할 정보 2'},
+    ],
+    threads:[
+      {time:'☀️ 오전 9:00', edt:'전날 오후 8:00',item:'🧵 쓰레드 1회차',content:''},
+      {time:'🌒 오후 10:30',edt:'오전 9:30',     item:'🧵 쓰레드 2회차',content:''},
+    ]
+  },
+  d4:{
+    label:'목요일',
+    principles:[
+      {note:'🧵 Threads 3회차 추가 (오전 9시 30분) — 목요일은 Threads 최고 반응 요일'}
+    ],
+    pinterest:[
+      {time:'☀️ 오전 10:00',edt:'전날 오후 9:00',item:'📌 핀 1회차',content:'☠️ 독소 정보 1'},
+      {time:'🌒 오후 10:00',edt:'오전 9:00',     item:'📌 핀 2회차',content:'☠️ 독소 정보 2'},
+      {time:'🌒 오후 11:00',edt:'오전 10:00',    item:'📌 핀 3회차',content:'☠️ 독소 정보 3'},
+    ],
+    threads:[
+      {time:'☀️ 오전 9:00', edt:'전날 오후 8:00',item:'🧵 쓰레드 1회차',content:''},
+      {time:'☀️ 오전 9:30', edt:'전날 오후 8:30',item:'🧵 쓰레드 2회차 추가',content:''},
+      {time:'🌒 오후 10:30',edt:'오전 9:30',     item:'🧵 쓰레드 3회차',content:''},
+    ]
+  },
+  d5:{
+    label:'금요일',
+    principles:[
+      {note:'📌 핀 4회차 추가 (오후 11시) — Pinterest 금요일 오후 3~5시 EST 피크 반영'}
+    ],
+    pinterest:[
+      {time:'☀️ 오전 10:00',edt:'전날 오후 9:00',item:'📌 핀 1회차',content:'🍳 관련 레시피'},
+      {time:'🌒 오후 10:00',edt:'오전 9:00',     item:'📌 핀 2회차',content:'🥬 다음 주 식재료 건강 정보 예약'},
+      {time:'🌒 오후 11:00',edt:'오전 10:00',    item:'📌 핀 3+4회차',content:'🥬 다음 주 식재료 건강 정보 예약'},
+      {time:'🌒 오후 11:30',edt:'오전 10:30',    item:'📌 토요일 핀 예약 → 오전 9:00 발행',content:'🍳 레시피 or 🥬 식재료'},
+      {time:'🌒 오후 11:50',edt:'오전 10:50',    item:'📌 일요일 핀 예약 → 오전 10:00 발행',content:'🥬 식재료 or 🍳 레시피'},
+    ],
+    threads:[
+      {time:'☀️ 오전 9:00', edt:'전날 오후 8:00',item:'🧵 쓰레드 1회차',content:''},
+      {time:'🌒 오후 10:30',edt:'오전 9:30',     item:'🧵 쓰레드 2회차',content:''},
+      {time:'🌒 오후 11:55',edt:'오전 10:55',    item:'🧵 토·일 쓰레드 예약',content:''},
+    ]
+  },
+  d6:{
+    label:'토요일',
+    principles:[
+      {note:'📌 핀 4~5회차 추가 (오전 9시/11시) — Pinterest 토요일 오후 8~11시 EST 반영'}
+    ],
+    pinterest:[
+      {time:'☀️ 오전 9:00', edt:'전날 오후 8:00',item:'📌 핀 1회차 (예약 발행)',content:'🍳 레시피 or 🥬 식재료'},
+      {time:'☀️ 오전 11:00',edt:'전날 오후 10:00',item:'📌 핀 2회차 (예약 발행)',content:'🍳 레시피 or 🥬 식재료'},
+      {time:'🌒 오후 10:00',edt:'오전 9:00',     item:'📌 핀 3회차 (예약 발행)',content:'🍳 레시피 or 🥬 식재료'},
+    ],
+    threads:[
+      {time:'🌒 오후 10:30',edt:'오전 9:30',item:'🧵 쓰레드 (예약 발행)',content:''},
+    ]
+  },
+  d7:{
+    label:'일요일',
+    principles:[
+      {note:'🧵 Threads 휴일 (최저 반응 요일) — Pinterest 1회차만 유지'}
+    ],
+    pinterest:[
+      {time:'☀️ 오전 10:00',edt:'전날 오후 9:00',item:'📌 핀 1회차 (예약 발행)',content:'🥬 식재료 or 🍳 레시피'},
+    ],
+    threads:[
+      {time:'🌒 오후 10:30',edt:'오전 9:30',item:'🧵 쓰레드 (예약 발행)',content:''},
+    ]
+  }
+};
+
+// 플랫폼 운영 원칙
+const PLATFORM_PRINCIPLES=[
+  {platform:'🧵 Threads',goal:'팔로워 2,000 달성, 반응 유지',min:'1회',bestDays:'월, 목',avoid:'일요일'},
+  {platform:'📌 Pinterest',goal:'저장·클릭 증가 (임프레션보다 우선)',min:'2~3회',bestDays:'금, 토',avoid:'없음 (매일 권장)'},
+];
+const EXTRA_SCHEDULE=[
+  {day:'월요일',item:'🧵 쓰레드 3회차 추가',time:'오후 2시',reason:'EST 오전 1시 피크 반영, 주초 알고리즘 부스트'},
+  {day:'목요일',item:'🧵 쓰레드 3회차 추가',time:'오전 9시 30분',reason:'목요일은 Threads 최고 반응 요일'},
+  {day:'금요일',item:'📌 핀 4회차 추가',time:'오후 11시',reason:'Pinterest 금요일 오후 3~5시 EST 피크 반영'},
+  {day:'토요일',item:'📌 핀 4~5회차 추가',time:'오전 9시 / 오전 11시',reason:'Pinterest 토요일 오후 8~11시 EST → KST 일요일 오전 반영'},
+  {day:'일요일',item:'📌 핀 1회차만 유지',time:'오전 10시',reason:'쓰레드 휴일 (최저 반응 요일)'},
+];
+
+// 주간 흐름 요약
+const WEEKLY_FLOW=[
+  {day:'월',theme:'🥬 식재료 건강 정보 × 3',pins:'3',threads:'3'},
+  {day:'화',theme:'🥬 식재료 정보 + 🍳 레시피 × 2',pins:'3',threads:'2'},
+  {day:'수',theme:'🍳 레시피 + ⚠️ 피해야 할 정보 × 2',pins:'3',threads:'2'},
+  {day:'목',theme:'☠️ 독소 정보 × 3',pins:'3',threads:'3'},
+  {day:'금',theme:'🍳 레시피 + 🥬 다음 주 예약 + 토·일 선예약',pins:'4+예약',threads:'2+예약'},
+  {day:'토',theme:'🍳 레시피 or 🥬 식재료 (예약 발행)',pins:'3',threads:'1'},
+  {day:'일',theme:'🥬 식재료 or 🍳 레시피 (예약 발행)',pins:'1',threads:'1'},
+  {day:'합계',theme:'',pins:'20',threads:'14'},
+];
+
+// 업로드 체크 상태 저장소
+let uploadChecks={};
+
+function saveUploadCheck(key,val){
+  uploadChecks[key]=val;
+  if(window.fbSet)window.fbSet('bapsim/uploadChecks/'+key,val);
+}
+function restoreUploadChecks(){
+  Object.entries(uploadChecks).forEach(([k,v])=>{
+    const cb=document.querySelector(`[data-upload-key="${k}"]`);
+    if(cb)cb.checked=v;
+  });
+}
+
+// 업로드 섹션 빌더
+function buildUploadTable(dayId,platform,rows){
+  const prefix=`up-${dayId}-${platform}-`;
+  let html=`<table class="upload-table">
+    <thead><tr><th>예약</th><th>완료</th><th>시간(KST)</th><th>미국(EDT)</th><th>항목</th><th>콘텐츠</th></tr></thead><tbody>`;
+  rows.forEach((r,i)=>{
+    const k1=prefix+'res-'+i, k2=prefix+'done-'+i;
+    html+=`<tr>
+      <td class="check-cell"><input type="checkbox" data-upload-key="${k1}" onchange="saveUploadCheck('${k1}',this.checked)"></td>
+      <td class="check-cell"><input type="checkbox" data-upload-key="${k2}" onchange="saveUploadCheck('${k2}',this.checked)"></td>
+      <td>${r.time}</td><td style="font-size:0.75rem;color:#888;">${r.edt}</td>
+      <td style="font-size:0.78rem;white-space:nowrap;">${r.item}</td>
+      <td><input class="content-input" type="text" value="${r.content||''}" placeholder="콘텐츠 제목..." data-upload-content="${dayId}-${platform}-${i}" onchange="saveUploadContent('${dayId}','${platform}',${i},this.value)"></td>
+    </tr>`;
+  });
+  html+=`</tbody></table>`;
+  return html;
+}
+
+let uploadData={};
+function saveUploadContent(dayId,platform,idx,val){
+  if(!uploadData[dayId])uploadData[dayId]={};
+  if(!uploadData[dayId][platform])uploadData[dayId][platform]=[];
+  uploadData[dayId][platform][idx]=val;
+  if(window.fbSet)window.fbSet('bapsim/uploadData/'+dayId,uploadData[dayId]);
+}
+
+function buildAllUploadSections(){
+  Object.entries(UPLOAD_SCHEDULE).forEach(([dayId,data])=>{
+    const container=document.getElementById('upload-'+dayId);
+    if(!container)return;
+
+    let html=`<div class="upload-section">
+      <div class="upload-section-header collapsible-header" onclick="toggleUploadSection('${dayId}')">
+        <span>📅 업로드 일정</span>
+        <span class="collapse-icon open" id="upload-icon-${dayId}">▲</span>
+      </div>
+      <div id="upload-body-${dayId}">`;
+
+    // 플랫폼 운영 원칙
+    html+=`<div style="margin-bottom:10px;">
+      <div class="upload-section-header" style="cursor:pointer;background:#f0fff4;border-radius:8px;padding:8px 12px;font-size:0.82rem;font-weight:700;" onclick="toggleUploadSub('principle-${dayId}','principle-icon-${dayId}')">
+        📊 플랫폼별 운영 원칙
+        <span class="collapse-icon" id="principle-icon-${dayId}">▼</span>
+      </div>
+      <div id="principle-${dayId}" style="display:none;padding:10px 0;">
+        <table class="principle-table">
+          <thead><tr><th>플랫폼</th><th>목표</th><th>하루 최소</th><th>최적 요일</th><th>피해야 할 요일</th></tr></thead>
+          <tbody>
+            ${PLATFORM_PRINCIPLES.map(p=>`<tr><td>${p.platform}</td><td>${p.goal}</td><td>${p.min}</td><td>${p.bestDays}</td><td>${p.avoid}</td></tr>`).join('')}
+          </tbody>
+        </table>
+        ${data.principles.length?`<div style="background:#fff9e6;border-radius:8px;padding:8px 12px;font-size:0.8rem;margin-top:6px;">
+          ${data.principles.map(p=>`<div>⭐ ${p.note}</div>`).join('')}
+        </div>`:''}
+        <table class="principle-table" style="margin-top:8px;">
+          <thead><tr><th>요일</th><th>추가 업로드</th><th>시간(KST)</th><th>이유</th></tr></thead>
+          <tbody>${EXTRA_SCHEDULE.map(e=>`<tr><td>${e.day}</td><td>${e.item}</td><td>${e.time}</td><td style="font-size:0.75rem;color:#666;">${e.reason}</td></tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
+
+    // 데일리 체크리스트
+    html+=`<div style="margin-bottom:10px;">
+      <div class="upload-section-header" style="background:#f8fffe;border-radius:8px;padding:8px 12px;font-size:0.82rem;font-weight:700;cursor:pointer;" onclick="toggleUploadSub('checklist-${dayId}','checklist-icon-${dayId}')">
+        ✅ 데일리 업로드 체크리스트
+        <span class="collapse-icon open" id="checklist-icon-${dayId}">▲</span>
+      </div>
+      <div id="checklist-${dayId}">
+        <div class="platform-header">📌 Pinterest</div>
+        ${buildUploadTable(dayId,'pin',data.pinterest)}
+        <div class="platform-header" style="margin-top:8px;">🧵 Threads</div>
+        ${buildUploadTable(dayId,'th',data.threads)}
+        <div style="margin-top:8px;display:flex;gap:7px;flex-wrap:wrap;">
+          <button class="csv-btn" onclick="exportUploadCSV('${dayId}')">📥 CSV 저장</button>
+          <label class="csv-upload-btn" style="cursor:pointer;">📤 CSV 불러오기<input type="file" accept=".csv" style="display:none;" onchange="importUploadCSV('${dayId}',this)"></label>
+        </div>
+      </div>
+    </div>`;
+
+    // 주간 콘텐츠 흐름 요약
+    html+=`<div style="margin-bottom:10px;">
+      <div class="upload-section-header" style="background:#f0fff4;border-radius:8px;padding:8px 12px;font-size:0.82rem;font-weight:700;cursor:pointer;" onclick="toggleUploadSub('flow-${dayId}','flow-icon-${dayId}')">
+        ⭐ 주간 콘텐츠 흐름 요약
+        <span class="collapse-icon" id="flow-icon-${dayId}">▼</span>
+      </div>
+      <div id="flow-${dayId}" style="display:none;">
+        <table class="flow-table">
+          <thead><tr><th>요일</th><th>핀 테마</th><th>핀 수</th><th>Threads</th></tr></thead>
+          <tbody>${WEEKLY_FLOW.map(f=>`<tr><td>${f.day}</td><td style="text-align:left;">${f.theme}</td><td>${f.pins}</td><td>${f.threads}</td></tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
+
+    // 누적 콘텐츠 관리
+    html+=`<div style="margin-bottom:10px;">
+      <div class="upload-section-header" style="background:#f3e8ff;border-radius:8px;padding:8px 12px;font-size:0.82rem;font-weight:700;cursor:pointer;" onclick="toggleUploadSub('log-${dayId}','log-icon-${dayId}')">
+        📋 누적 콘텐츠 관리 (주간)
+        <span class="collapse-icon" id="log-icon-${dayId}">▼</span>
+      </div>
+      <div id="log-${dayId}" style="display:none;">
+        <div id="content-log-table-${dayId}"></div>
+        <div style="margin-top:8px;display:flex;gap:7px;flex-wrap:wrap;">
+          <button class="add-task-btn" style="font-size:0.78rem;padding:6px 12px;" onclick="addContentLogRow()">+ 행 추가</button>
+          <button class="csv-btn" onclick="exportContentLogCSV()">📥 CSV 저장</button>
+        </div>
+        <div class="log-summary" id="log-summary"></div>
+      </div>
+    </div>`;
+
+    // 콘텐츠 기획
+    html+=`<div>
+      <div class="upload-section-header" style="background:#fff3cd;border-radius:8px;padding:8px 12px;font-size:0.82rem;font-weight:700;cursor:pointer;" onclick="toggleUploadSub('plan-${dayId}','plan-icon-${dayId}')">
+        💡 콘텐츠 기획
+        <span class="collapse-icon" id="plan-icon-${dayId}">▼</span>
+      </div>
+      <div id="plan-${dayId}" style="display:none;">
+        <div id="planning-board-${dayId}"></div>
+      </div>
+    </div>`;
+
+    html+=`</div></div>`;
+    container.innerHTML=html;
+  });
+
+  // 누적 콘텐츠 테이블 렌더 (첫 번째 요일만 실제 데이터, 나머지는 링크)
+  renderContentLog();
+  renderPlanningBoard();
+}
+
+function toggleUploadSection(dayId){
+  const body=document.getElementById('upload-body-'+dayId);
+  const icon=document.getElementById('upload-icon-'+dayId);
+  if(!body)return;
+  const closed=body.style.display==='none';
+  body.style.display=closed?'':'none';
+  if(icon){icon.textContent=closed?'▲':'▼';icon.classList.toggle('open',closed);}
+}
+function toggleUploadSub(bodyId,iconId){
+  const body=document.getElementById(bodyId);
+  const icon=document.getElementById(iconId);
+  if(!body)return;
+  const closed=body.style.display==='none';
+  body.style.display=closed?'':'none';
+  if(icon){icon.textContent=closed?'▲':'▼';icon.classList.toggle('open',closed);}
+}
+
+// CSV 내보내기/가져오기
+function exportUploadCSV(dayId){
+  const data=UPLOAD_SCHEDULE[dayId];
+  let csv='플랫폼,예약,완료,시간(KST),미국(EDT),항목,콘텐츠\n';
+  const addRows=(platform,rows,prefix)=>{
+    rows.forEach((r,i)=>{
+      const k1=`up-${dayId}-${prefix}-res-${i}`;
+      const k2=`up-${dayId}-${prefix}-done-${i}`;
+      const res=uploadChecks[k1]?'✅':'☐';
+      const done=uploadChecks[k2]?'✅':'☐';
+      const contentInput=document.querySelector(`[data-upload-content="${dayId}-${prefix}-${i}"]`);
+      const content=contentInput?contentInput.value:r.content||'';
+      csv+=`${platform},${res},${done},"${r.time}","${r.edt}","${r.item}","${content}"\n`;
+    });
+  };
+  addRows('Pinterest',data.pinterest,'pin');
+  addRows('Threads',data.threads,'th');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`upload_${dayId}_${fmtDate(new Date()).replace(/\./g,'')}.csv`;
+  a.click();
+  showToast('📥 CSV 저장됨');
+}
+function importUploadCSV(dayId,input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const lines=e.target.result.split('\n').slice(1);
+    let pinIdx=0,thIdx=0;
+    lines.forEach(line=>{
+      if(!line.trim())return;
+      const cols=line.split(',').map(c=>c.replace(/^"|"$/g,'').trim());
+      const platform=cols[0],content=cols[6]||'';
+      if(platform==='Pinterest'){
+        const el=document.querySelector(`[data-upload-content="${dayId}-pin-${pinIdx}"]`);
+        if(el){el.value=content;saveUploadContent(dayId,'pin',pinIdx,content);}
+        pinIdx++;
+      }else if(platform==='Threads'){
+        const el=document.querySelector(`[data-upload-content="${dayId}-th-${thIdx}"]`);
+        if(el){el.value=content;saveUploadContent(dayId,'th',thIdx,content);}
+        thIdx++;
+      }
+    });
+    showToast('📤 CSV 불러오기 완료');
+  };
+  reader.readAsText(file,'utf-8');
+}
+
+// 누적 콘텐츠 관리
+let contentLog=[];
+const SERIES_OPTIONS=['🥬 식재료 건강정보','🍳 식재료 레시피','☠️ 독소'];
+
+function renderContentLog(){
+  const containers=document.querySelectorAll('[id^="content-log-table-"]');
+  if(!containers.length)return;
+  let html=`<table class="content-log-table">
+    <thead><tr><th>업로드 날짜</th><th>시리즈</th><th>제목</th><th>플랫폼</th><th>비고</th><th></th></tr></thead>
+    <tbody id="content-log-tbody">`;
+  contentLog.forEach((row,i)=>{
+    html+=`<tr>
+      <td><input type="text" value="${row.date||''}" placeholder="날짜" onchange="updateContentLog(${i},'date',this.value)"></td>
+      <td><select onchange="updateContentLog(${i},'series',this.value)">
+        <option value="">선택</option>
+        ${SERIES_OPTIONS.map(s=>`<option value="${s}" ${row.series===s?'selected':''}>${s}</option>`).join('')}
+      </select></td>
+      <td><input type="text" value="${row.title||''}" placeholder="제목" onchange="updateContentLog(${i},'title',this.value)"></td>
+      <td><input type="text" value="${row.platform||''}" placeholder="Pinterest/Threads" onchange="updateContentLog(${i},'platform',this.value)"></td>
+      <td><input type="text" value="${row.note||''}" placeholder="비고" onchange="updateContentLog(${i},'note',this.value)"></td>
+      <td><button class="delete-task-btn" onclick="deleteContentLogRow(${i})">🗑</button></td>
+    </tr>`;
+  });
+  html+=`</tbody></table>`;
+  containers.forEach(c=>c.innerHTML=html);
+  updateLogSummary();
+}
+function addContentLogRow(){
+  contentLog.push({date:fmtDate(new Date()),series:'',title:'',platform:'Pinterest',note:''});
+  renderContentLog();
+  if(window.fbSet)window.fbSet('bapsim/contentLog',contentLog);
+}
+function updateContentLog(i,field,val){
+  if(contentLog[i])contentLog[i][field]=val;
+  if(window.fbSet)window.fbSet('bapsim/contentLog',contentLog);
+  updateLogSummary();
+}
+function deleteContentLogRow(i){
+  contentLog.splice(i,1);
+  renderContentLog();
+  if(window.fbSet)window.fbSet('bapsim/contentLog',contentLog);
+}
+function updateLogSummary(){
+  const summaries=document.querySelectorAll('#log-summary');
+  const counts={};
+  SERIES_OPTIONS.forEach(s=>counts[s]=0);
+  contentLog.forEach(r=>{if(r.series&&counts[r.series]!==undefined)counts[r.series]++;});
+  const html=Object.entries(counts).map(([s,c])=>`<span>${s}: <strong>${c}개</strong></span>`).join('');
+  summaries.forEach(el=>el.innerHTML=html+`<span>합계: <strong>${contentLog.length}개</strong></span>`);
+}
+function exportContentLogCSV(){
+  let csv='업로드 날짜,시리즈,제목,플랫폼,비고\n';
+  contentLog.forEach(r=>{
+    csv+=`"${r.date||''}","${r.series||''}","${r.title||''}","${r.platform||''}","${r.note||''}"\n`;
+  });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download=`content_log_${fmtDate(new Date()).replace(/\./g,'')}.csv`;
+  a.click();showToast('📥 누적 콘텐츠 CSV 저장됨');
+}
+
+// 콘텐츠 기획 보드
+let planningItems={ingredient:[],recipe:[],toxin:[]};
+const PLANNING_SERIES=[
+  {key:'ingredient',label:'🥬 식재료 건강정보',cls:'ph1'},
+  {key:'recipe',   label:'🍳 식재료 레시피',  cls:'ph2'},
+  {key:'toxin',    label:'☠️ 독소',          cls:'ph3'},
+];
+const STATUS_OPTIONS=[
+  {val:'idea', label:'🟡 아이디어',cls:'status-idea'},
+  {val:'wip',  label:'🔵 제작중',  cls:'status-wip'},
+  {val:'done', label:'✅ 완료',    cls:'status-done'},
+];
+
+function renderPlanningBoard(){
+  const containers=document.querySelectorAll('[id^="planning-board-"]');
+  if(!containers.length)return;
+  let html=`<div class="planning-grid">`;
+  PLANNING_SERIES.forEach(({key,label,cls})=>{
+    const items=planningItems[key]||[];
+    html+=`<div class="planning-card">
+      <div class="planning-card-header ${cls}">${label}
+        <span style="font-size:0.75rem;font-weight:400;">${items.length}개</span>
+      </div>
+      <div class="planning-card-body">`;
+    items.forEach((item,i)=>{
+      const st=STATUS_OPTIONS.find(s=>s.val===item.status)||STATUS_OPTIONS[0];
+      html+=`<div class="planning-item">
+        <select style="border:1px solid #ddd;border-radius:6px;font-size:0.72rem;padding:2px 4px;" onchange="updatePlanningItem('${key}',${i},'status',this.value)">
+          ${STATUS_OPTIONS.map(s=>`<option value="${s.val}" ${item.status===s.val?'selected':''}>${s.label}</option>`).join('')}
+        </select>
+        <span style="flex:1;font-size:0.82rem;">${item.title}</span>
+        <button class="delete-task-btn" onclick="deletePlanningItem('${key}',${i})">🗑</button>
+      </div>`;
+    });
+    html+=`<div class="planning-add">
+        <input class="planning-input" id="planning-input-${key}" type="text" placeholder="제목 입력..." onkeydown="if(event.key==='Enter')addPlanningItem('${key}')">
+        <button class="add-task-btn" style="font-size:0.75rem;padding:5px 10px;" onclick="addPlanningItem('${key}')">+</button>
+      </div>
+      </div></div>`;
+  });
+  html+=`</div>`;
+  containers.forEach(c=>c.innerHTML=html);
+}
+function addPlanningItem(key){
+  const input=document.getElementById('planning-input-'+key);
+  if(!input||!input.value.trim())return;
+  if(!planningItems[key])planningItems[key]=[];
+  planningItems[key].push({title:input.value.trim(),status:'idea'});
+  renderPlanningBoard();
+  if(window.fbSet)window.fbSet('bapsim/planningItems',planningItems);
+}
+function updatePlanningItem(key,i,field,val){
+  if(planningItems[key]&&planningItems[key][i])planningItems[key][i][field]=val;
+  if(window.fbSet)window.fbSet('bapsim/planningItems',planningItems);
+}
+function deletePlanningItem(key,i){
+  if(planningItems[key])planningItems[key].splice(i,1);
+  renderPlanningBoard();
+  if(window.fbSet)window.fbSet('bapsim/planningItems',planningItems);
+}
+
+// ── 일간 요약 ──
+function generateDailySummary(){
+  const tk=DAY_KEYS[today.getDay()];
+  if(!tk){showToast('요일 정보를 찾을 수 없습니다.');return;}
+  const tbody=document.getElementById('tasks-'+tk);
+  const done=[],undone=[];
+  if(tbody){
+    tbody.querySelectorAll('tr').forEach(tr=>{
+      const cb=tr.querySelector('input[type="checkbox"]');
+      const taskCell=tr.querySelector('.task-text');
+      if(cb&&taskCell){(cb.checked?done:undone).push(taskCell.textContent.trim());}
+    });
+  }
+  const memo=document.getElementById('day-memo-'+tk)?.value||'(없음)';
+  const dNames={d1:'월',d2:'화',d3:'수',d4:'목',d5:'금',d6:'토',d7:'일'};
+  const now=new Date();
+  const text=
+`📋 일간 업무 요약 — ${fmtDate(today)} (${dNames[tk]}요일)
+작성: ${fmtDateTime(now)}
+
+✅ 완료 (${done.length}건)
+${done.map(t=>'  ✓ '+t).join('\n')||'  (없음)'}
+
+⬜ 미완료 (${undone.length}건)
+${undone.map(t=>'  ☐ '+t).join('\n')||'  (없음)'}
+
+완료율: ${done.length+undone.length>0?Math.round(done.length/(done.length+undone.length)*100):0}%
+
+📝 오늘 메모
+  ${memo}`;
+  document.getElementById('dailySummaryContent').textContent=text;
+  document.getElementById('dailySummaryBox').style.display='block';
+}
+function copyDailySummaryMd(){
+  const text=document.getElementById('dailySummaryContent').textContent;
+  navigator.clipboard.writeText(text.replace(/  ✓ /g,'- [x] ').replace(/  ☐ /g,'- [ ] '))
+    .then(()=>showToast('📝 MD 형식으로 복사되었습니다!'));
+}
+
+// ── 보고서 ──
+function v(id){return(document.getElementById(id)||{}).value||'___';}
+
+function generateReport(){
+  const now=new Date();
+  const checkItems=[...document.querySelectorAll('#table5 input[type="checkbox"]')].map(cb=>{
+    const tr=cb.closest('tr');
+    const tc=tr?tr.querySelector('.task-text'):null;
+    return tc?{done:cb.checked,text:tc.textContent.trim()}:null;
+  }).filter(Boolean);
+  const checkDone=checkItems.filter(i=>i.done).map(i=>'  ✓ '+i.text).join('\n')||'  (없음)';
+  const checkUndone=checkItems.filter(i=>!i.done).map(i=>'  ☐ '+i.text).join('\n')||'  (없음)';
+  const msGroups=['mar','apr','3k','5k','book','q'];
+  const msLabels={mar:'3월 말',apr:'4월','3k':'팔로워 3,000','5k':'팔로워 5,000',book:'에세이집 출판 전',q:'분기별 반복'};
+  let msLines='';
+  msGroups.forEach(grp=>{
+    const cbs=document.querySelectorAll(`#ms-body-${grp} input[type="checkbox"]`);
+    const total=cbs.length,done=[...cbs].filter(c=>c.checked).length;
+    msLines+=`  ${msLabels[grp]}: ${done}/${total} 완료\n`;
+  });
+  const text=
+`[주간 성과 보고 — ${v('rf-week')} | ${v('rf-date')}]
+생성일시: ${fmtDateTime(now)}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧵 Threads @bapsim.longevity
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+팔로워: ${v('rf-th-followers')}명 (전주 대비 ${v('rf-th-diff')})
+포스트: ${v('rf-th-posts')} | 좋아요/댓글: ${v('rf-th-engage')}
+최고 반응: ${v('rf-th-best')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📸 Instagram @okki_artwork
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+팔로워: ${v('rf-ig-followers')}명 (전주 대비 ${v('rf-ig-diff')})
+게시물: ${v('rf-ig-posts')} | 릴스: ${v('rf-ig-reels')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🛒 Etsy / 📌 Pinterest / 🎬 ME
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Etsy 누적: ${v('rf-etsy-total')} | 판매: ${v('rf-etsy-sales')}
+Pinterest: ${v('rf-pin-total')}핀 | 노출: ${v('rf-pin-views')}
+ME 업로드: ${v('rf-me-upload')} | 누적수익: ${v('rf-me-revenue')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ 완료한 일
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${v('rf-done')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❌ 못한 일 & 이유
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${v('rf-undone')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔜 다음 주 우선순위
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${v('rf-next')}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 즉시 체크리스트 현황
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+완료:
+${checkDone}
+미완료:
+${checkUndone}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔁 장기목표 진행률
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${msLines}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📝 추가 메모
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${v('rf-memo')}`;
+  document.getElementById('reportPreviewContent').textContent=text;
+  document.getElementById('reportPreview').classList.add('show');
+}
+function copyReportText(){
+  navigator.clipboard.writeText(document.getElementById('reportPreviewContent').textContent)
+    .then(()=>showToast('📋 복사되었습니다! ('+fmtDateTime(new Date())+')'));
+}
+function copyReportMd(){
+  const text=document.getElementById('reportPreviewContent').textContent;
+  navigator.clipboard.writeText('# 📊 주간 보고서\n\n'+text)
+    .then(()=>showToast('📝 MD 복사됨 ('+fmtDateTime(new Date())+')'));
+}
+function saveReportDraft(){
+  const ids=['rf-week','rf-date','rf-th-followers','rf-th-diff','rf-th-posts','rf-th-engage','rf-th-best',
+    'rf-ig-followers','rf-ig-diff','rf-ig-posts','rf-ig-reels',
+    'rf-etsy-total','rf-etsy-sales','rf-pin-total','rf-pin-views','rf-me-upload','rf-me-revenue',
+    'rf-done','rf-undone','rf-next','rf-memo'];
+  if(window.fbSet)ids.forEach(id=>window.fbSet('bapsim/report/'+id,(document.getElementById(id)||{}).value||''));
+  showToast('💾 임시저장 완료 ('+fmtDateTime(new Date())+')');
+}
+function loadReportDraft(){showToast('📂 페이지 새로고침 시 자동으로 불러옵니다.');}
+
+// ── 내보내기 ──
+function downloadFile(name,html){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([html],{type:'text/html;charset=utf-8'}));
+  a.download=name;a.click();
+}
+
+// 일간 보고서 (오늘 한일/못한일 + 장기목표 시각화)
+function exportDailyReport(){
+  const tk=DAY_KEYS[today.getDay()]||'d1';
+  const now=new Date();
+  const nowStr=fmtDateTime(now);
+  const dNames={d1:'월',d2:'화',d3:'수',d4:'목',d5:'금',d6:'토',d7:'일'};
+
+  // 오늘 업무 한일/못한일
+  const tbody=document.getElementById('tasks-'+tk);
+  const doneRows=[],undoneRows=[];
+  if(tbody){
+    tbody.querySelectorAll('tr').forEach(tr=>{
+      const cb=tr.querySelector('input[type="checkbox"]');
+      const cells=tr.querySelectorAll('td');
+      if(cells.length>=3){
+        const time=cells[1]?cells[1].textContent.trim():'';
+        const task=cells[2]?cells[2].textContent.trim():'';
+        const row=`<tr><td style="padding:6px 10px;color:#888;">${time}</td><td style="padding:6px 10px;">${task}</td></tr>`;
+        if(cb&&cb.checked)doneRows.push(row);
+        else undoneRows.push(row);
+      }
+    });
+  }
+
+  // 즉시 체크리스트 한일/못한일
+  const clDone=[],clUndone=[];
+  document.querySelectorAll('#table5 input[type="checkbox"]').forEach(cb=>{
+    const tr=cb.closest('tr');
+    const tc=tr?tr.querySelector('.task-text'):null;
+    if(tc){
+      const row=`<tr><td style="padding:6px 10px;">${tc.textContent.trim()}</td></tr>`;
+      if(cb.checked)clDone.push(row);
+      else clUndone.push(row);
+    }
+  });
+
+  // 장기목표 시각화
+  const msGroups=['mar','apr','3k','5k','book','q'];
+  const msLabels={mar:'3월 말',apr:'4월','3k':'팔로워 3,000','5k':'팔로워 5,000',book:'에세이집 출판 전',q:'분기별 반복'};
+  const msColors={mar:'#2d6a4f',apr:'#c9a000','3k':'#1d6fa5','5k':'#5a189a',book:'#7b2d8b',q:'#495057'};
+  let goalBars='';
+  msGroups.forEach(grp=>{
+    const cbs=document.querySelectorAll(`#ms-body-${grp} input[type="checkbox"]`);
+    const total=cbs.length,done=[...cbs].filter(c=>c.checked).length;
+    const pct=total?Math.round(done/total*100):0;
+    const color=msColors[grp]||'#2d6a4f';
+    goalBars+=`
+    <div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:0.82rem;color:#555;margin-bottom:4px;">
+        <span><strong>${msLabels[grp]}</strong></span>
+        <span>${done}/${total} 완료 (${pct}%)</span>
+      </div>
+      <div style="height:18px;background:#e9ecef;border-radius:10px;overflow:hidden;">
+        <div style="height:100%;width:${pct}%;background:${color};border-radius:10px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;">
+          ${pct>10?`<span style="font-size:0.68rem;color:#fff;font-weight:700;">${pct}%</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  });
+
+  // 모든 메모
+  const dayMemo=(document.getElementById('day-memo-'+tk)||{}).value||'(없음)';
+  const clMemo=(document.getElementById('memo-checklist5')||{}).value||'';
+  const roomMemos=[1,2,3,4].map(i=>{
+    const val=(document.getElementById('memo-room'+i)||{}).value||'';
+    const labels=['🌿 밥심 콘텐츠 (채팅방 1)','🎨 okki_artwork (채팅방 2)','🎬 MotionElements (채팅방 3)','🖼️ 이미지 생성 (채팅방 4)'];
+    return val?`<div style="margin-bottom:8px;"><strong>${labels[i-1]}</strong><div style="background:#f8fff8;border:1px solid #d0e8d0;border-radius:6px;padding:8px;font-size:0.83rem;white-space:pre-wrap;margin-top:3px;">${val}</div></div>`:'';
+  }).join('');
+
+  downloadFile(`bapsim_daily_${fmtDate(now).replace(/\./g,'')}.html`,
+`<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8">
+<title>일간 보고서 ${fmtDate(now)}</title>
+<style>
+body{font-family:'Segoe UI',sans-serif;max-width:780px;margin:40px auto;padding:0 20px;color:#212529;}
+h1{color:#1b4332;font-size:1.4rem;margin-bottom:4px;}
+h2{color:#2d6a4f;font-size:1rem;margin:22px 0 8px;border-bottom:2px solid #d8f3dc;padding-bottom:5px;}
+h2.red{color:#c1121f;border-bottom-color:#ffd6d6;}
+table{width:100%;border-collapse:collapse;margin-bottom:12px;}
+th{background:#2d6a4f;color:#fff;padding:8px 10px;text-align:left;font-size:0.82rem;}
+td{border-bottom:1px solid #f0f0f0;}
+.meta{color:#888;font-size:0.82rem;margin-bottom:20px;}
+.memo-box{background:#fffdf5;border:1.5px solid #ffe69c;border-radius:8px;padding:12px;font-size:0.85rem;white-space:pre-wrap;margin-bottom:12px;}
+.empty{color:#aaa;font-size:0.85rem;padding:8px;}
+.copy-btn{background:#1d6fa5;color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;font-size:0.85rem;margin-top:16px;}
+</style></head>
+<body>
+<h1>📅 일간 보고서</h1>
+<div class="meta">${fmtDate(now)} (${dNames[tk]||''}요일) &nbsp;|&nbsp; 생성: ${nowStr}</div>
+
+<h2>✅ 오늘 한 일</h2>
+<table><thead><tr><th>시간</th><th>업무</th></tr></thead>
+<tbody>${doneRows.join('')||'<tr><td colspan="2" class="empty">(완료 항목 없음)</td></tr>'}</tbody></table>
+
+${clDone.length?`<table><thead><tr><th>즉시 체크리스트 — 완료</th></tr></thead><tbody>${clDone.join('')}</tbody></table>`:''}
+
+<h2 class="red">❌ 오늘 못 한 일</h2>
+<table><thead><tr><th>시간</th><th>업무</th></tr></thead>
+<tbody>${undoneRows.join('')||'<tr><td colspan="2" class="empty">(미완료 항목 없음)</td></tr>'}</tbody></table>
+
+${clUndone.length?`<table><thead><tr><th>즉시 체크리스트 — 미완료</th></tr></thead><tbody>${clUndone.join('')}</tbody></table>`:''}
+
+<h2>🎯 장기목표 진행률</h2>
+${goalBars}
+
+<h2>📝 오늘 메모</h2>
+<div class="memo-box">${dayMemo}</div>
+
+${clMemo?`<h2>📋 체크리스트 메모</h2><div class="memo-box">${clMemo}</div>`:''}
+${roomMemos?`<h2>💬 채팅방별 진행 메모</h2>${roomMemos}`:''}
+
+<button class="copy-btn" onclick="navigator.clipboard.writeText(document.body.innerText).then(()=>alert('복사됨!'))">📝 텍스트 복사</button>
+</body></html>`);
+  showToast('📥 일간 보고서 저장됨 ('+nowStr+')');
+}
+
+function exportWeeklyReport(){
+  const now=new Date();const nowStr=fmtDateTime(now);
+  let text=document.getElementById('reportPreviewContent').textContent;
+  if(!text||text.trim()===''){generateReport();text=document.getElementById('reportPreviewContent').textContent;}
+  downloadFile(`bapsim_weekly_${v('rf-week').replace(/\s/g,'')}_${fmtDate(now).replace(/\./g,'')}.html`,
+`<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>주간 보고서</title>
+<style>body{font-family:'Segoe UI',sans-serif;max-width:750px;margin:40px auto;padding:0 20px;}
+h1{color:#1b4332;}
+pre{background:#f8fffe;border:1.5px solid #95d5b2;border-radius:10px;padding:18px;white-space:pre-wrap;font-size:0.85rem;line-height:1.8;}
+.meta{color:#888;font-size:0.8rem;margin-bottom:16px;}
+.copy-btn{background:#7b2d8b;color:#fff;border:none;padding:8px 18px;border-radius:8px;cursor:pointer;margin-top:14px;font-size:0.85rem;}
+</style></head><body>
+<h1>📊 주간 성과 보고서</h1>
+<div class="meta">저장일시: ${nowStr}</div>
+<pre>${text}</pre>
+<button class="copy-btn" onclick="navigator.clipboard.writeText(document.querySelector('pre').textContent).then(()=>alert('복사됨!'))">📝 복사</button>
+</body></html>`);
+  showToast('📥 주간 보고서 저장됨 ('+nowStr+')');
+}
+
+function copyDailyReportMd(){
+  const tk=DAY_KEYS[today.getDay()];
+  if(!tk){showToast('주말에는 일간 보고서가 없습니다.');return;}
+  const now=new Date();
+  const dNames={d1:'월',d2:'화',d3:'수',d4:'목',d5:'금',d6:'토',d7:'일'};
+  let md=`# 📅 일간 보고서 — ${fmtDate(today)} (${dNames[tk]}요일)\n생성: ${fmtDateTime(now)}\n\n## ✅ 오늘 한 일\n\n`;
+  const tbody=document.getElementById('tasks-'+tk);
+  if(tbody){
+    tbody.querySelectorAll('tr').forEach(tr=>{
+      const cb=tr.querySelector('input[type="checkbox"]');
+      const tc=tr.querySelector('.task-text');
+      if(cb&&tc&&cb.checked)md+=`- [x] ${tc.textContent.trim()}\n`;
+    });
+  }
+  md+=`\n## ❌ 오늘 못 한 일\n\n`;
+  if(tbody){
+    tbody.querySelectorAll('tr').forEach(tr=>{
+      const cb=tr.querySelector('input[type="checkbox"]');
+      const tc=tr.querySelector('.task-text');
+      if(cb&&tc&&!cb.checked)md+=`- [ ] ${tc.textContent.trim()}\n`;
+    });
+  }
+  const memo=(document.getElementById('day-memo-'+tk)||{}).value||'';
+  if(memo)md+=`\n## 📝 메모\n\n${memo}\n`;
+  [1,2,3,4].forEach(i=>{
+    const val=(document.getElementById('memo-room'+i)||{}).value||'';
+    if(val)md+=`\n## 채팅방${i} 메모\n\n${val}\n`;
+  });
+  navigator.clipboard.writeText(md).then(()=>showToast('📝 MD 복사됨 ('+fmtDateTime(now)+')'));
+}
+
+// ── 네비게이션 ──
+document.querySelectorAll('nav a').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    scrollToSection(a.getAttribute('href').slice(1));
+  });
+});
+
+// ── 초기 실행 ──
+window.addEventListener('load',()=>{
+  const tk=DAY_KEYS[today.getDay()];
+  showDay(tk||'d1');
+  updateProgress();
+  ['mar','apr','3k','5k','book','q'].forEach(g=>updateMsProgressFull(g));
+  fixNavTop();
+});
+</script>
+</body>
+</html>
